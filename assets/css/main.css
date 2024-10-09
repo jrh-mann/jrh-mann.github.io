@@ -936,6 +936,11 @@ table tfoot td {
   background-color: #ffffff;
 }
 
+.current-reading {
+  position: relative;
+  top: 100px;
+}
+
 .about {
   margin: 0 0 40px;
   text-align: center;
@@ -1196,6 +1201,7 @@ a.newer-posts:hover {
 
 /* - - - - - - - - - - Post Page Styles - - - - - - - - - - */
 .wrap-content {
+  margin-left: 60px;
   padding: 20px;
 }
 
