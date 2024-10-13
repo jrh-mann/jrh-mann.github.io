@@ -936,11 +936,6 @@ table tfoot td {
   background-color: #ffffff;
 }
 
-.current-reading {
-  position: relative;
-  top: 100px;
-}
-
 .about {
   margin: 0 0 40px;
   text-align: center;
@@ -1227,9 +1222,15 @@ a.newer-posts:hover {
   position: relative;
   padding: 0;
   margin: 0;
-  max-height: 500px;
+  max-height: 300px;
   background-color: #fafafa;
   overflow: hidden;
+}
+
+.page-cover-image img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .page-cover-image figure {

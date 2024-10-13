@@ -10,13 +10,14 @@ site-twitter: #if your site has a twitter account, enter it here
 # Author Settings
 author: James Mann # add your name
 author-img: james.jpg # add your photo
-about-author: Hi there, I'm James, I'm an undergraduate studying computer science at UCL. I like to row and play chess and read.
+about-author: I like to work on and think about AI. I also like rowing, chess and reading.
 social-twitter: broverfitter
 social-facebook: 
 social-github: broverfitter # add your Github handle
 social-linkedin: jrhmann
 social-email: james.mann.24@ucl.ac.uk
-current_book: What's wrong with the world - G.K. Chesterton
+current_book: What's wrong with the world
+current_book_author: G.K. Chesterton
 
 # Disqus
 discus-identifier: mr-brown # add your discus identifier

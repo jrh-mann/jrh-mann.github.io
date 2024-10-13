@@ -1,0 +1,41 @@
+---
+layout: post
+title: About
+date: 2024-10-08 00:00:01 +0000
+description: This page expands some more on who I am, what I like to do and think about etc. etc.
+img: i-rest.jpg # Add image post (optional)
+fig-caption: # Add figcaption (optional)
+tags: 
+---
+
+My name is James Mann and I was born in Darlington, UK, in 2005. I wanted to be a lawyer up until around age 14 but after discovering CS and AI during lockdown my mind was changed. Since that moment I've been learning and, with varying degrees of success, practising AI. I started at UCL for CS in September 2024 which has allowed me to start rowing, alongside this I play football and go to the gym and occasionally run. I also enjoy playing chess, cooking and reading. 
+
+## What I want this site to be
+I've set this site up hoping it can be something between a CV, a GitHub, and a blog. I'll keep it up to date with information about myself but also with posts about what I'm currently working on, as I work on it. I may supplement this technical stuff with other posts more generally about things I'm thinking or reading about, we'll see. A big reason for creating this is persistence of mind and as a record of myself, for myself. At the minute, I work on something, get so far with it, stop to do something else and then forget loads of things which I subsequently have to relearn. Ideally this site should help with that.
+
+![I and My friends]({{site.baseurl}}/assets/img/we-in-rest.jpg)
+
+Most of the work I've done upto now has involved developing things I think are interesting from scratch. Trying to minimise abstraction to get a good foundational understanding of what it is I'm working with. For this, I've written a poor mans pytorch using only numpy to compute both forward and backward passes, advanced that into a working transformer model, and a DDPM image generator trained with pytorch. If I ever get round to it I might write those up into posts but I don't think there's much value in it so probably won't. Instead I want to get into practice of whenever I start work on a new project, I complement it with a post. Then, as I work on and develop whatever it is I'm working on, the post can be a record of ideas and sanity check for myself.
+
+## AI Policy
+
+Nothing written on this site will be AI slop unless explicitly labelled so. I make extensive use of AI in most all other aspects of my life, but this will be a no slop zone.
+
+## Links and titles
+I mention reading a fair amount so here's a general assortment of what I like to read, what I have read, and where I go to find things to read. For books, one of my favourite authors is CS Lewis, other writers I enjoy reading are GK Chesterton, George Orwell, Spike Milligan, Aldous Huxley, Oscar Wilde, T.E. Lawrence, and many, many others. 
+Some of my favourite books are 
+* Seven Pillars of Wisdom - T.E. Lawrence
+* Adolf Hitler, my Part in his Downfall - Spike Milligan
+* The Republic - Plato
+* The Picture of Dorian Gray - Oscar Wilde
+* What's Wrong with the World - GK Chesterton
+
+For more modern relevant reading I often just follow links off twitter to a wide range of bloggers etc. However, here are a few pages where I seem to end up an endorsably large amount of time.
+* [bactra.org](http://bactra.org/)
+* [tracingwoodgrains.com](https://www.tracingwoodgrains.com/)
+* [sive.rs](https://sive.rs/)
+* [jdpressman.com](https://jdpressman.com/)
+* [astralcodexten.com](https://www.astralcodexten.com/)
+* [richardhanania.com](https://www.richardhanania.com/)
+* [wrathofgnon.com](https://wrathofgnon.substack.com/)
+* [generative.ink](https://generative.ink/)

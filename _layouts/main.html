@@ -11,7 +11,22 @@ layout: default
       <div class="author-name">{{site.author}}</div>
       <p>{{site.about-author}}</p>
       <div class="current-reading">
-        <p><b>Currently Reading</b>: <p><i>{{site.current_book}}</i></p></p>
+        <p>
+          <br>
+            <p>
+            <b style="font-size: 12px;">
+              Currently Reading:
+            </b>
+            </p>  
+            <i style="font-size: 12px;">
+              {{site.current_book}}
+            </i>
+            <p style="font-size: 12px;">
+              - {{site.current_book_author}}
+            </p>
+            </br>
+          </br>
+        </p>
       </div>
     </div>
   </header> <!-- End Header -->
