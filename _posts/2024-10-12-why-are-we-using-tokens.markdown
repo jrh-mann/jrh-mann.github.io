@@ -1,7 +1,7 @@
 ---
 layout: post
 title: CV
-date: 2025-06-03 00:00:00 +0300
+date: 2025-01-01 00:00:00 +0300
 description: My CV
 ---
 
