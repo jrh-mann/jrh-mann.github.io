@@ -10,13 +10,8 @@ permalink: /meter-readings/
     <div class="readings-summary">
         <div class="summary-card electricity">
             <h3>Electricity</h3>
-            <p class="current-reading">13,245 kWh</p>
-            <p class="usage">+125 kWh this month</p>
-        </div>
-        <div class="summary-card gas">
-            <h3>Gas</h3>
-            <p class="current-reading">5,890 m³</p>
-            <p class="usage">+85 m³ this month</p>
+            <p class="current-reading">47,649.7 kWh</p>
+            <p class="usage">+68.7 kWh since last reading</p>
         </div>
     </div>
 
@@ -31,7 +26,6 @@ permalink: /meter-readings/
                 <tr>
                     <th>Date</th>
                     <th>Electricity (kWh)</th>
-                    <th>Gas (m³)</th>
                 </tr>
             </thead>
             <tbody id="readingsTable">
@@ -64,18 +58,7 @@ const chart = new Chart(ctx, {
                 backgroundColor: 'rgba(52, 152, 219, 0.1)',
                 borderWidth: 3,
                 fill: true,
-                tension: 0.1,
-                yAxisID: 'y'
-            },
-            {
-                label: 'Gas (m³)',
-                data: meterData.map(d => d.gas),
-                borderColor: '#e74c3c',
-                backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.1,
-                yAxisID: 'y1'
+                tension: 0.1
             }
         ]
     },
@@ -89,7 +72,7 @@ const chart = new Chart(ctx, {
         plugins: {
             title: {
                 display: true,
-                text: 'Meter Readings Over Time',
+                text: 'Electricity Meter Readings Over Time',
                 font: {
                     size: 18,
                     weight: 'bold'
@@ -104,13 +87,11 @@ const chart = new Chart(ctx, {
                 display: true,
                 title: {
                     display: true,
-                    text: 'Month'
+                    text: 'Date'
                 }
             },
             y: {
-                type: 'linear',
                 display: true,
-                position: 'left',
                 title: {
                     display: true,
                     text: 'Electricity (kWh)',
@@ -118,22 +99,6 @@ const chart = new Chart(ctx, {
                 },
                 ticks: {
                     color: '#3498db'
-                }
-            },
-            y1: {
-                type: 'linear',
-                display: true,
-                position: 'right',
-                title: {
-                    display: true,
-                    text: 'Gas (m³)',
-                    color: '#e74c3c'
-                },
-                ticks: {
-                    color: '#e74c3c'
-                },
-                grid: {
-                    drawOnChartArea: false,
                 }
             }
         }
@@ -143,13 +108,11 @@ const chart = new Chart(ctx, {
 // Populate table
 function populateTable() {
     const tableBody = document.getElementById('readingsTable');
-    const recentData = meterData.slice(-6).reverse(); // Last 6 months, newest first
     
-    tableBody.innerHTML = recentData.map(reading => `
+    tableBody.innerHTML = meterData.map(reading => `
         <tr>
             <td>${new Date(reading.date).toLocaleDateString('en-GB')}</td>
             <td>${reading.electricity.toLocaleString()}</td>
-            <td>${reading.gas.toLocaleString()}</td>
         </tr>
     `).join('');
 }
