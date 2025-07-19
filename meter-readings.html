@@ -10,8 +10,8 @@ permalink: /meter-readings/
     <div class="readings-summary">
         <div class="summary-card electricity">
             <h3>Electricity</h3>
-            <p class="current-reading">47,649.7 kWh</p>
-            <p class="usage">+68.7 kWh since last reading</p>
+            <p class="current-reading">68.7 kWh</p>
+            <p class="usage">Total usage since move-in</p>
         </div>
     </div>
 
@@ -25,7 +25,8 @@ permalink: /meter-readings/
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Electricity (kWh)</th>
+                    <th>Usage (kWh)</th>
+                    <th>Total Reading (kWh)</th>
                 </tr>
             </thead>
             <tbody id="readingsTable">
@@ -45,6 +46,16 @@ const meterData = [
     { date: '2025-07-19', electricity: 47649.7},
 ];
 
+// Calculate baseline (first reading)
+const baseline = meterData[0].electricity;
+
+// Calculate usage from baseline
+const usageData = meterData.map(d => ({
+    date: d.date,
+    rawReading: d.electricity,
+    usage: d.electricity - baseline
+}));
+
 // Create chart
 const ctx = document.getElementById('meterChart').getContext('2d');
 const chart = new Chart(ctx, {
@@ -52,10 +63,10 @@ const chart = new Chart(ctx, {
     data: {
         datasets: [
             {
-                label: 'Electricity (kWh)',
-                data: meterData.map(d => ({
+                label: 'Electricity Usage (kWh)',
+                data: usageData.map(d => ({
                     x: d.date,
-                    y: d.electricity
+                    y: d.usage
                 })),
                 borderColor: '#3498db',
                 backgroundColor: 'rgba(52, 152, 219, 0.1)',
@@ -75,7 +86,7 @@ const chart = new Chart(ctx, {
         plugins: {
             title: {
                 display: true,
-                text: 'Electricity Meter Readings Over Time',
+                text: 'Electricity Usage Since Move-in (July 9th)',
                 font: {
                     size: 18,
                     weight: 'bold'
@@ -104,7 +115,7 @@ const chart = new Chart(ctx, {
                 display: true,
                 title: {
                     display: true,
-                    text: 'Electricity (kWh)',
+                    text: 'Usage (kWh)',
                     color: '#3498db'
                 },
                 ticks: {
@@ -119,10 +130,11 @@ const chart = new Chart(ctx, {
 function populateTable() {
     const tableBody = document.getElementById('readingsTable');
     
-    tableBody.innerHTML = meterData.map(reading => `
+    tableBody.innerHTML = usageData.map(reading => `
         <tr>
             <td>${new Date(reading.date).toLocaleDateString('en-GB')}</td>
-            <td>${reading.electricity.toLocaleString()}</td>
+            <td>${reading.usage.toLocaleString()}</td>
+            <td>${reading.rawReading.toLocaleString()}</td>
         </tr>
     `).join('');
 }
