@@ -1,0 +1,158 @@
+---
+layout: default
+title: Meter Readings
+permalink: /meter-readings/
+---
+
+<div class="meter-readings-container">
+    <h1>Utility Meter Readings</h1>
+    
+    <div class="readings-summary">
+        <div class="summary-card electricity">
+            <h3>Electricity</h3>
+            <p class="current-reading">13,245 kWh</p>
+            <p class="usage">+125 kWh this month</p>
+        </div>
+        <div class="summary-card gas">
+            <h3>Gas</h3>
+            <p class="current-reading">5,890 m³</p>
+            <p class="usage">+85 m³ this month</p>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="meterChart"></canvas>
+    </div>
+
+    <div class="data-table">
+        <h3>Recent Readings</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Electricity (kWh)</th>
+                    <th>Gas (m³)</th>
+                </tr>
+            </thead>
+            <tbody id="readingsTable">
+                <!-- Data will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Dummy data
+const meterData = [
+    { date: '2025-07-09', electricity: 47581},
+    { date: '2025-07-18', electricity: 47642.0},
+    { date: '2025-07-19', electricity: 47649.7},
+];
+
+// Create chart
+const ctx = document.getElementById('meterChart').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: meterData.map(d => new Date(d.date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })),
+        datasets: [
+            {
+                label: 'Electricity (kWh)',
+                data: meterData.map(d => d.electricity),
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.1,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Gas (m³)',
+                data: meterData.map(d => d.gas),
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.1,
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        plugins: {
+            title: {
+                display: true,
+                text: 'Meter Readings Over Time',
+                font: {
+                    size: 18,
+                    weight: 'bold'
+                }
+            },
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            x: {
+                display: true,
+                title: {
+                    display: true,
+                    text: 'Month'
+                }
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Electricity (kWh)',
+                    color: '#3498db'
+                },
+                ticks: {
+                    color: '#3498db'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Gas (m³)',
+                    color: '#e74c3c'
+                },
+                ticks: {
+                    color: '#e74c3c'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                }
+            }
+        }
+    }
+});
+
+// Populate table
+function populateTable() {
+    const tableBody = document.getElementById('readingsTable');
+    const recentData = meterData.slice(-6).reverse(); // Last 6 months, newest first
+    
+    tableBody.innerHTML = recentData.map(reading => `
+        <tr>
+            <td>${new Date(reading.date).toLocaleDateString('en-GB')}</td>
+            <td>${reading.electricity.toLocaleString()}</td>
+            <td>${reading.gas.toLocaleString()}</td>
+        </tr>
+    `).join('');
+}
+
+populateTable();
+</script>
