@@ -36,6 +36,7 @@ permalink: /meter-readings/
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script>
 // Dummy data
 const meterData = [
@@ -49,11 +50,13 @@ const ctx = document.getElementById('meterChart').getContext('2d');
 const chart = new Chart(ctx, {
     type: 'line',
     data: {
-        labels: meterData.map(d => new Date(d.date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })),
         datasets: [
             {
                 label: 'Electricity (kWh)',
-                data: meterData.map(d => d.electricity),
+                data: meterData.map(d => ({
+                    x: d.date,
+                    y: d.electricity
+                })),
                 borderColor: '#3498db',
                 backgroundColor: 'rgba(52, 152, 219, 0.1)',
                 borderWidth: 3,
@@ -84,6 +87,13 @@ const chart = new Chart(ctx, {
         },
         scales: {
             x: {
+                type: 'time',
+                time: {
+                    unit: 'day',
+                    displayFormats: {
+                        day: 'MMM dd'
+                    }
+                },
                 display: true,
                 title: {
                     display: true,
