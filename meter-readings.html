@@ -10,7 +10,12 @@ permalink: /meter-readings/
     <div class="readings-summary">
         <div class="summary-card electricity">
             <h3>Electricity</h3>
-            <p class="current-reading">68.7 kWh</p>
+            <p class="current-reading">76.6 kWh</p>
+            <p class="usage">Total usage since move-in</p>
+        </div>
+        <div class="summary-card gas">
+            <h3>Gas</h3>
+            <p class="current-reading">0 m³</p>
             <p class="usage">Total usage since move-in</p>
         </div>
     </div>
@@ -25,8 +30,10 @@ permalink: /meter-readings/
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Usage (kWh)</th>
-                    <th>Total Reading (kWh)</th>
+                    <th>Electricity Usage (kWh)</th>
+                    <th>Gas Usage (m³)</th>
+                    <th>Electricity Total (kWh)</th>
+                    <th>Gas Total (m³)</th>
                 </tr>
             </thead>
             <tbody id="readingsTable">
@@ -41,20 +48,26 @@ permalink: /meter-readings/
 <script>
 // Dummy data
 const meterData = [
-    { date: '2025-07-09', electricity: 47581},
-    { date: '2025-07-18', electricity: 47642.0},
-    { date: '2025-07-19', electricity: 47649.7},
-    { date: '2025-07-20', electricity: 47657.6}
+    { date: '2025-07-09', electricity: 47581, gas: null},
+    { date: '2025-07-18', electricity: 47642.0, gas: null},
+    { date: '2025-07-19', electricity: 47649.7, gas: null},
+    { date: '2025-07-20', electricity: 47657.6, gas: null},
+    { date: '2025-07-22', electricity: 47665.8, gas: null},
+    { date: '2025-07-28', electricity: 47696.6, gas: 37573.2},
+
 ];
 
-// Calculate baseline (first reading)
-const baseline = meterData[0].electricity;
+// Calculate baselines (first readings)
+const electricityBaseline = meterData[0].electricity;
+const gasBaseline = meterData.find(d => d.gas !== null)?.gas || 0;
 
-// Calculate usage from baseline
+// Calculate usage from baselines
 const usageData = meterData.map(d => ({
     date: d.date,
-    rawReading: d.electricity,
-    usage: d.electricity - baseline
+    rawElectricity: d.electricity,
+    rawGas: d.gas,
+    electricityUsage: d.electricity - electricityBaseline,
+    gasUsage: d.gas !== null ? d.gas - gasBaseline : null
 }));
 
 // Create chart
@@ -67,13 +80,27 @@ const chart = new Chart(ctx, {
                 label: 'Electricity Usage (kWh)',
                 data: usageData.map(d => ({
                     x: d.date,
-                    y: d.usage
+                    y: d.electricityUsage
                 })),
                 borderColor: '#3498db',
                 backgroundColor: 'rgba(52, 152, 219, 0.1)',
                 borderWidth: 3,
                 fill: true,
-                tension: 0.1
+                tension: 0.1,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Gas Usage (m³)',
+                data: usageData.filter(d => d.gasUsage !== null).map(d => ({
+                    x: d.date,
+                    y: d.gasUsage
+                })),
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.1,
+                yAxisID: 'y1'
             }
         ]
     },
@@ -87,7 +114,7 @@ const chart = new Chart(ctx, {
         plugins: {
             title: {
                 display: true,
-                text: 'Electricity Usage Since Move-in (July 9th)',
+                text: 'Utility Usage Since Move-in (July 9th)',
                 font: {
                     size: 18,
                     weight: 'bold'
@@ -113,14 +140,32 @@ const chart = new Chart(ctx, {
                 }
             },
             y: {
+                type: 'linear',
                 display: true,
+                position: 'left',
                 title: {
                     display: true,
-                    text: 'Usage (kWh)',
+                    text: 'Electricity Usage (kWh)',
                     color: '#3498db'
                 },
                 ticks: {
                     color: '#3498db'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Gas Usage (m³)',
+                    color: '#e74c3c'
+                },
+                ticks: {
+                    color: '#e74c3c'
+                },
+                grid: {
+                    drawOnChartArea: false,
                 }
             }
         }
@@ -134,8 +179,10 @@ function populateTable() {
     tableBody.innerHTML = usageData.map(reading => `
         <tr>
             <td>${new Date(reading.date).toLocaleDateString('en-GB')}</td>
-            <td>${reading.usage.toLocaleString()}</td>
-            <td>${reading.rawReading.toLocaleString()}</td>
+            <td>${reading.electricityUsage.toLocaleString()}</td>
+            <td>${reading.gasUsage !== null ? reading.gasUsage.toLocaleString() : 'No data'}</td>
+            <td>${reading.rawElectricity.toLocaleString()}</td>
+            <td>${reading.rawGas !== null ? reading.rawGas.toLocaleString() : 'No data'}</td>
         </tr>
     `).join('');
 }
