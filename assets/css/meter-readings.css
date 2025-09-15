@@ -110,6 +110,72 @@
     color: #34495e;
 }
 
+/* Estimator */
+.usage-estimator {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.usage-estimator h3 {
+    margin-top: 0;
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 10px;
+}
+
+.estimator-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.control-group label {
+    font-size: 0.9em;
+    color: #2c3e50;
+    margin-bottom: 6px;
+}
+
+.control-group input[type="date"],
+.control-group input[type="number"] {
+    padding: 10px;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    font-size: 1em;
+}
+
+.estimator-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.result-card {
+    background: #f9fbfd;
+    border: 1px solid #ecf0f1;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.result-card h4 {
+    margin: 0 0 8px 0;
+}
+
+.estimator-note {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin-top: 10px;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .readings-summary {

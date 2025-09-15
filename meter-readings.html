@@ -57,9 +57,7 @@ const meterData = [
     { date: '2025-08-17', electricity: 47802.4, gas: 37575.236},
     { date: '2025-09-05', electricity: 47885.8, gas: null},
     { date: '2025-09-10', electricity: 47919.2, gas: 37580},
-    { date: '2025-09-15', electricity: 47959.1, gas:
-    37584.3
-    }
+    { date: '2025-09-15', electricity: 47959.1, gas: 37584.3 }
 
 ];
 
@@ -194,4 +192,167 @@ function populateTable() {
 }
 
 populateTable();
+
+// ================= Estimator UI =================
+// Add controls below the table for selecting a range and estimating monthly usage and cost
+const container = document.querySelector('.meter-readings-container');
+const estimatorSection = document.createElement('div');
+estimatorSection.className = 'usage-estimator';
+estimatorSection.innerHTML = `
+    <h3>Usage & Cost Estimator</h3>
+    <div class="estimator-controls">
+        <div class="control-group">
+            <label for="fromDate">From date</label>
+            <input type="date" id="fromDate" />
+        </div>
+        <div class="control-group">
+            <label for="toDate">To date</label>
+            <input type="date" id="toDate" />
+        </div>
+        <div class="control-group">
+            <label for="priceElec">Price per kWh (£)</label>
+            <input type="number" id="priceElec" step="0.0001" min="0" placeholder="0.30" />
+        </div>
+        <div class="control-group">
+            <label for="priceGas">Price per m³ (£)</label>
+            <input type="number" id="priceGas" step="0.0001" min="0" placeholder="0.11" />
+        </div>
+    </div>
+    <div class="estimator-results">
+        <div class="result-card">
+            <h4>Electricity</h4>
+            <p><strong>Usage in range:</strong> <span id="elecRangeUsage">-</span> kWh</p>
+            <p><strong>Days in range:</strong> <span id="elecDays">-</span> days</p>
+            <p><strong>Daily average:</strong> <span id="elecDailyAvg">-</span> kWh/day</p>
+            <p><strong>Monthly extrapolation:</strong> <span id="elecMonthly">-</span> kWh</p>
+            <p><strong>Monthly cost:</strong> £<span id="elecMonthlyCost">-</span></p>
+        </div>
+        <div class="result-card">
+            <h4>Gas</h4>
+            <p><strong>Usage in range:</strong> <span id="gasRangeUsage">-</span> m³</p>
+            <p><strong>Days in range:</strong> <span id="gasDays">-</span> days</p>
+            <p><strong>Daily average:</strong> <span id="gasDailyAvg">-</span> m³/day</p>
+            <p><strong>Monthly extrapolation:</strong> <span id="gasMonthly">-</span> m³</p>
+            <p><strong>Monthly cost:</strong> £<span id="gasMonthlyCost">-</span></p>
+        </div>
+    </div>
+    <p class="estimator-note">Tip: click two points on the chart to auto-fill the date range.</p>
+`;
+container.appendChild(estimatorSection);
+
+// Helper: parse date string (YYYY-MM-DD) to Date at midnight local
+function d(dateStr) { return new Date(dateStr + 'T00:00:00'); }
+
+// Interpolate cumulative reading at an arbitrary date using linear interpolation
+function interpolateReading(series, date) {
+    // series is array of { date: 'YYYY-MM-DD', value: number } sorted by date
+    const t = date.getTime();
+    for (let i = 0; i < series.length - 1; i++) {
+        const a = series[i];
+        const b = series[i + 1];
+        const ta = d(a.date).getTime();
+        const tb = d(b.date).getTime();
+        if (t === ta) return a.value;
+        if (t > ta && t < tb) {
+            const ratio = (t - ta) / (tb - ta);
+            return a.value + ratio * (b.value - a.value);
+        }
+    }
+    // If before first or after last, clamp to nearest known
+    if (t <= d(series[0].date).getTime()) return series[0].value;
+    return series[series.length - 1].value;
+}
+
+// Build cumulative series for interpolation (raw totals, not usage)
+const elecSeries = meterData.map(r => ({ date: r.date, value: r.electricity }));
+const gasSeries = meterData.filter(r => r.gas !== null).map(r => ({ date: r.date, value: r.gas }));
+
+function fmt(n, digits = 1) {
+    if (Number.isNaN(n) || n === null || n === undefined) return '-';
+    return Number(n).toLocaleString('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function recalcEstimator() {
+    const fromInput = document.getElementById('fromDate');
+    const toInput = document.getElementById('toDate');
+    const priceElec = parseFloat(document.getElementById('priceElec').value) || 0;
+    const priceGas = parseFloat(document.getElementById('priceGas').value) || 0;
+
+    if (!fromInput.value || !toInput.value) return; // wait until both are set
+    const from = d(fromInput.value);
+    const to = d(toInput.value);
+    if (to < from) return; // invalid range
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    const days = Math.max(1, Math.round((to - from) / dayMs) + 1); // inclusive days
+
+    // Electricity usage between dates via interpolation of cumulative totals
+    const elecStart = interpolateReading(elecSeries, from);
+    const elecEnd = interpolateReading(elecSeries, to);
+    const elecUsage = Math.max(0, elecEnd - elecStart);
+    const elecDaily = elecUsage / days;
+    const elecMonthly = elecDaily * 30.44; // average month length
+    const elecMonthlyCost = elecMonthly * priceElec;
+
+    // Gas (only if we have any gas data)
+    let gasUsage = null, gasDaily = null, gasMonthly = null, gasMonthlyCost = null, gasDays = days;
+    if (gasSeries.length >= 1) {
+        const gasStart = interpolateReading(gasSeries, from);
+        const gasEnd = interpolateReading(gasSeries, to);
+        gasUsage = Math.max(0, gasEnd - gasStart);
+        gasDaily = gasUsage / days;
+        gasMonthly = gasDaily * 30.44;
+        gasMonthlyCost = gasMonthly * priceGas;
+    }
+
+    // Update UI
+    document.getElementById('elecRangeUsage').textContent = fmt(elecUsage);
+    document.getElementById('elecDays').textContent = days.toString();
+    document.getElementById('elecDailyAvg').textContent = fmt(elecDaily);
+    document.getElementById('elecMonthly').textContent = fmt(elecMonthly);
+    document.getElementById('elecMonthlyCost').textContent = fmt(elecMonthlyCost, 2);
+
+    document.getElementById('gasRangeUsage').textContent = gasUsage === null ? '-' : fmt(gasUsage);
+    document.getElementById('gasDays').textContent = gasUsage === null ? '-' : days.toString();
+    document.getElementById('gasDailyAvg').textContent = gasUsage === null ? '-' : fmt(gasDaily);
+    document.getElementById('gasMonthly').textContent = gasUsage === null ? '-' : fmt(gasMonthly);
+    document.getElementById('gasMonthlyCost').textContent = gasUsage === null ? '-' : fmt(gasMonthlyCost, 2);
+}
+
+// Wire inputs
+['fromDate','toDate','priceElec','priceGas'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', recalcEstimator);
+    el.addEventListener('change', recalcEstimator);
+});
+
+// Pre-fill with last two dates and default prices
+document.getElementById('priceElec').value = '0.30';
+document.getElementById('priceGas').value = '0.11';
+const lastTwo = meterData.slice(-2).map(r => r.date);
+document.getElementById('fromDate').value = lastTwo[0];
+document.getElementById('toDate').value = lastTwo[1];
+recalcEstimator();
+
+// Allow clicking on chart points to set dates
+let clickStage = 0; // 0: next click sets from, 1: sets to, then toggles
+document.getElementById('meterChart').onclick = function(evt) {
+    const points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+    if (points.length) {
+        const firstPoint = points[0];
+        const datasetIndex = firstPoint.datasetIndex;
+        const index = firstPoint.index;
+        const dataset = chart.data.datasets[datasetIndex];
+        const point = dataset.data[index];
+        const isoDate = typeof point.x === 'string' ? point.x : new Date(point.x).toISOString().slice(0,10);
+        if (clickStage === 0) {
+            document.getElementById('fromDate').value = isoDate;
+            clickStage = 1;
+        } else {
+            document.getElementById('toDate').value = isoDate;
+            clickStage = 0;
+        }
+        recalcEstimator();
+    }
+};
 </script>
