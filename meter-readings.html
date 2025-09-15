@@ -210,12 +210,24 @@ estimatorSection.innerHTML = `
             <input type="date" id="toDate" />
         </div>
         <div class="control-group">
-            <label for="priceElec">Price per kWh (£)</label>
-            <input type="number" id="priceElec" step="0.0001" min="0" placeholder="0.30" />
+            <label for="elecUnitP">Electricity unit rate (p/kWh)</label>
+            <input type="number" id="elecUnitP" step="0.01" min="0" placeholder="26.41" />
         </div>
         <div class="control-group">
-            <label for="priceGas">Price per m³ (£)</label>
-            <input type="number" id="priceGas" step="0.0001" min="0" placeholder="0.11" />
+            <label for="elecStandingP">Electricity standing (p/day)</label>
+            <input type="number" id="elecStandingP" step="0.01" min="0" placeholder="39.20" />
+        </div>
+        <div class="control-group">
+            <label for="gasUnitP">Gas unit rate (p/kWh)</label>
+            <input type="number" id="gasUnitP" step="0.01" min="0" placeholder="6.56" />
+        </div>
+        <div class="control-group">
+            <label for="gasStandingP">Gas standing (p/day)</label>
+            <input type="number" id="gasStandingP" step="0.01" min="0" placeholder="27.72" />
+        </div>
+        <div class="control-group">
+            <label for="gasKwhPerM3">Gas conversion (kWh per m³)</label>
+            <input type="number" id="gasKwhPerM3" step="0.01" min="0" placeholder="11.20" />
         </div>
     </div>
     <div class="estimator-results">
@@ -225,18 +237,24 @@ estimatorSection.innerHTML = `
             <p><strong>Days in range:</strong> <span id="elecDays">-</span> days</p>
             <p><strong>Daily average:</strong> <span id="elecDailyAvg">-</span> kWh/day</p>
             <p><strong>Monthly extrapolation:</strong> <span id="elecMonthly">-</span> kWh</p>
-            <p><strong>Monthly cost:</strong> £<span id="elecMonthlyCost">-</span></p>
+            <p><strong>Monthly energy cost:</strong> £<span id="elecMonthlyEnergyCost">-</span></p>
+            <p><strong>Monthly standing charge:</strong> £<span id="elecMonthlyStanding">-</span></p>
+            <p><strong>Total monthly cost:</strong> £<span id="elecMonthlyCost">-</span></p>
         </div>
         <div class="result-card">
             <h4>Gas</h4>
             <p><strong>Usage in range:</strong> <span id="gasRangeUsage">-</span> m³</p>
+            <p><strong>Usage in range (kWh):</strong> <span id="gasRangeUsageKwh">-</span> kWh</p>
             <p><strong>Days in range:</strong> <span id="gasDays">-</span> days</p>
             <p><strong>Daily average:</strong> <span id="gasDailyAvg">-</span> m³/day</p>
             <p><strong>Monthly extrapolation:</strong> <span id="gasMonthly">-</span> m³</p>
-            <p><strong>Monthly cost:</strong> £<span id="gasMonthlyCost">-</span></p>
+            <p><strong>Monthly extrapolation (kWh):</strong> <span id="gasMonthlyKwh">-</span> kWh</p>
+            <p><strong>Monthly energy cost:</strong> £<span id="gasMonthlyEnergyCost">-</span></p>
+            <p><strong>Monthly standing charge:</strong> £<span id="gasMonthlyStanding">-</span></p>
+            <p><strong>Total monthly cost:</strong> £<span id="gasMonthlyCost">-</span></p>
         </div>
     </div>
-    <p class="estimator-note">Tip: click two points on the chart to auto-fill the date range.</p>
+    <p class="estimator-note">Tip: click two points on the chart to auto-fill the date range. Costs include standing charges; gas cost uses kWh conversion.</p>
 `;
 container.appendChild(estimatorSection);
 
@@ -275,8 +293,11 @@ function fmt(n, digits = 1) {
 function recalcEstimator() {
     const fromInput = document.getElementById('fromDate');
     const toInput = document.getElementById('toDate');
-    const priceElec = parseFloat(document.getElementById('priceElec').value) || 0;
-    const priceGas = parseFloat(document.getElementById('priceGas').value) || 0;
+    const elecUnitP = parseFloat(document.getElementById('elecUnitP').value) || 0; // p/kWh
+    const elecStandingP = parseFloat(document.getElementById('elecStandingP').value) || 0; // p/day
+    const gasUnitP = parseFloat(document.getElementById('gasUnitP').value) || 0; // p/kWh
+    const gasStandingP = parseFloat(document.getElementById('gasStandingP').value) || 0; // p/day
+    const gasKwhPerM3 = parseFloat(document.getElementById('gasKwhPerM3').value) || 0; // kWh per m3
 
     if (!fromInput.value || !toInput.value) return; // wait until both are set
     const from = d(fromInput.value);
@@ -285,24 +306,36 @@ function recalcEstimator() {
 
     const dayMs = 24 * 60 * 60 * 1000;
     const days = Math.max(1, Math.round((to - from) / dayMs) + 1); // inclusive days
+    const monthlyDays = 30.44; // average month length
 
     // Electricity usage between dates via interpolation of cumulative totals
     const elecStart = interpolateReading(elecSeries, from);
     const elecEnd = interpolateReading(elecSeries, to);
     const elecUsage = Math.max(0, elecEnd - elecStart);
     const elecDaily = elecUsage / days;
-    const elecMonthly = elecDaily * 30.44; // average month length
-    const elecMonthlyCost = elecMonthly * priceElec;
+    const elecMonthly = elecDaily * monthlyDays;
+    const elecUnitGBP = elecUnitP / 100;
+    const elecStandingGBPDay = elecStandingP / 100;
+    const elecMonthlyEnergyCost = elecMonthly * elecUnitGBP;
+    const elecMonthlyStanding = monthlyDays * elecStandingGBPDay;
+    const elecMonthlyCost = elecMonthlyEnergyCost + elecMonthlyStanding;
 
     // Gas (only if we have any gas data)
-    let gasUsage = null, gasDaily = null, gasMonthly = null, gasMonthlyCost = null, gasDays = days;
+    let gasUsage = null, gasDaily = null, gasMonthly = null, gasMonthlyKwh = null,
+        gasMonthlyEnergyCost = null, gasMonthlyStanding = null, gasMonthlyCost = null, gasDays = days, gasRangeKwh = null;
     if (gasSeries.length >= 1) {
         const gasStart = interpolateReading(gasSeries, from);
         const gasEnd = interpolateReading(gasSeries, to);
         gasUsage = Math.max(0, gasEnd - gasStart);
         gasDaily = gasUsage / days;
-        gasMonthly = gasDaily * 30.44;
-        gasMonthlyCost = gasMonthly * priceGas;
+        gasMonthly = gasDaily * monthlyDays; // m3
+        gasRangeKwh = gasUsage * gasKwhPerM3; // kWh for the selected range
+        gasMonthlyKwh = gasMonthly * gasKwhPerM3; // monthly kWh equivalent
+        const gasUnitGBP = gasUnitP / 100; // £ per kWh
+        const gasStandingGBPDay = gasStandingP / 100; // £ per day
+        gasMonthlyEnergyCost = gasMonthlyKwh * gasUnitGBP;
+        gasMonthlyStanding = monthlyDays * gasStandingGBPDay;
+        gasMonthlyCost = gasMonthlyEnergyCost + gasMonthlyStanding;
     }
 
     // Update UI
@@ -310,25 +343,34 @@ function recalcEstimator() {
     document.getElementById('elecDays').textContent = days.toString();
     document.getElementById('elecDailyAvg').textContent = fmt(elecDaily);
     document.getElementById('elecMonthly').textContent = fmt(elecMonthly);
+    document.getElementById('elecMonthlyEnergyCost').textContent = fmt(elecMonthlyEnergyCost, 2);
+    document.getElementById('elecMonthlyStanding').textContent = fmt(elecMonthlyStanding, 2);
     document.getElementById('elecMonthlyCost').textContent = fmt(elecMonthlyCost, 2);
 
     document.getElementById('gasRangeUsage').textContent = gasUsage === null ? '-' : fmt(gasUsage);
+    document.getElementById('gasRangeUsageKwh').textContent = gasRangeKwh === null ? '-' : fmt(gasRangeKwh);
     document.getElementById('gasDays').textContent = gasUsage === null ? '-' : days.toString();
     document.getElementById('gasDailyAvg').textContent = gasUsage === null ? '-' : fmt(gasDaily);
     document.getElementById('gasMonthly').textContent = gasUsage === null ? '-' : fmt(gasMonthly);
-    document.getElementById('gasMonthlyCost').textContent = gasUsage === null ? '-' : fmt(gasMonthlyCost, 2);
+    document.getElementById('gasMonthlyKwh').textContent = gasMonthlyKwh === null ? '-' : fmt(gasMonthlyKwh);
+    document.getElementById('gasMonthlyEnergyCost').textContent = gasMonthlyEnergyCost === null ? '-' : fmt(gasMonthlyEnergyCost, 2);
+    document.getElementById('gasMonthlyStanding').textContent = gasMonthlyStanding === null ? '-' : fmt(gasMonthlyStanding, 2);
+    document.getElementById('gasMonthlyCost').textContent = gasMonthlyCost === null ? '-' : fmt(gasMonthlyCost, 2);
 }
 
 // Wire inputs
-['fromDate','toDate','priceElec','priceGas'].forEach(id => {
+['fromDate','toDate','elecUnitP','elecStandingP','gasUnitP','gasStandingP','gasKwhPerM3'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('input', recalcEstimator);
     el.addEventListener('change', recalcEstimator);
 });
 
 // Pre-fill with last two dates and default prices
-document.getElementById('priceElec').value = '0.30';
-document.getElementById('priceGas').value = '0.11';
+document.getElementById('elecUnitP').value = '26.41';
+document.getElementById('elecStandingP').value = '39.20';
+document.getElementById('gasUnitP').value = '6.56';
+document.getElementById('gasStandingP').value = '27.72';
+document.getElementById('gasKwhPerM3').value = '11.20';
 const lastTwo = meterData.slice(-2).map(r => r.date);
 document.getElementById('fromDate').value = lastTwo[0];
 document.getElementById('toDate').value = lastTwo[1];
