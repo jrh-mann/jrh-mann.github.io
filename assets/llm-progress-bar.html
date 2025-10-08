@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Making a Progress Bar for LLM Output</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 60px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        
+        .image-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .image-container img {
+            max-width: 90%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .image-grid img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .image-caption {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .iframe-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        iframe {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        em {
+            font-style: italic;
+        }
+        
+        strong {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .note-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        
+        ul {
+            margin-left: 40px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .image-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Making a Progress Bar for LLM Output</h1>
+        
+        <p>A priori, measuring how many more tokens an LLM will produce is not necessarily an easy task. The LLM might decide this early on, or update its estimate on the fly. In this project, we investigate how LLMs (Qwen3-4b) represent n_tokens_remaining, by analysing the residual stream.</p>
+        
+        <p>We initially hypothesised that the model could represent this directly with a linear regression, or represent the log of this linearly, or do something outright different altogether. We investigated these hypotheses in turn. Producing a probe trained to predict n_tokens_remaning directly - lin_to_lin; a probe trained to predict log(n_tokens_remaining) - lin_to_log; and a probe trained to classify residuals into bins, where bin <em>n</em> covers all the residuals corresponding to between exp(<em>n</em>) and exp(<em>n+1</em>) tokens remaining - log_bin_classifier. All experiments are done on layer 15 of Qwen3-4B, a model with 36 layers.</p>
+        
+        <p>Initial results suggested the "doing something different" hypothesis was the most promising - it produced a progress bar that looked the most reasonable out of the different hypotheses. Note, initially we disregarded the lin_to_log hypothesis due to worse R2 metric, we have since found that this was a result of a poor data mix, with too few samples at the extremes. We mitigate this using a <em>balanced</em> data mix, which aims to ~evenly include samples from across the n_tokens_remaining domain (elaborated later). The below plots show the effectiveness of each approach before and after (top / bottom row) balancing the dataset. The predictions below are taken from residuals at the median position of each sequence.</p>
+        
+        <div class="image-grid">
+            <img src="images/image19.png" alt="Lin to Lin - Unbalanced">
+            <img src="images/image26.png" alt="Lin to Log - Unbalanced">
+            <img src="images/image17.png" alt="Log Bin Classifier - Unbalanced">
+            <img src="images/image14.png" alt="Lin to Lin - Balanced">
+            <img src="images/image13.png" alt="Lin to Log - Balanced">
+            <img src="images/image31.png" alt="Log Bin Classifier - Balanced">
+        </div>
+        
+        <p>We supplement this with plots that demonstrate the accuracy of the probe when predicting n_remaining_tokens at every point in the sequence.</p>
+        
+        <div class="image-grid">
+            <img src="images/image8.png" alt="Accuracy - Lin to Lin Unbalanced">
+            <img src="images/image30.png" alt="Accuracy - Lin to Log Unbalanced">
+            <img src="images/image18.png" alt="Accuracy - Log Bin Classifier Unbalanced">
+            <img src="images/image24.png" alt="Accuracy - Lin to Lin Balanced">
+            <img src="images/image23.png" alt="Accuracy - Lin to Log Balanced">
+            <img src="images/image29.png" alt="Accuracy - Log Bin Classifier Balanced">
+        </div>
+        
+        <p>This then enables us to develop a progress bar, where progress = n_tokens_generated / (n_tokens_generated + n_tokens_remaining). The below plots measure how well the progress bar does (note, R2 on these plots is inflated)</p>
+        
+        <div class="image-grid">
+            <img src="images/image37.png" alt="Progress Bar - Lin to Lin Unbalanced">
+            <img src="images/image22.png" alt="Progress Bar - Lin to Log Unbalanced">
+            <img src="images/image25.png" alt="Progress Bar - Log Bin Classifier Unbalanced">
+            <img src="images/image33.png" alt="Progress Bar - Lin to Lin Balanced">
+            <img src="images/image1.png" alt="Progress Bar - Lin to Log Balanced">
+            <img src="images/image35.png" alt="Progress Bar - Log Bin Classifier Balanced">
+        </div>
+        
+        <p>These show lin_to_log slightly outperforms log_bin_classifier in general. Whilst lin_to_lin is a worse model by all metrics. The below graph demonstrates the R2 of predictions through the sequence for lin_to_log and log_bin_classifier when both balanced and not. It demonstrates that the lin_to_log probe, trained on a balanced data mix performs best. Note, the drop off on the far right is to be expected as it represents the lowest sensitivity for the probes because the difference between bins is smallest - e^6 and e^7 being significantly more different than e^1 and e^2.</p>
+        
+        <div class="image-container">
+            <img src="images/image12.png" alt="R2 Comparison">
+        </div>
+        
+        <div class="note-box">
+            <p><strong>Balancing:</strong> the initial naive data mix we tried threw in all tokens in the response. This massively over-representated the tokens from long rollouts i.e. was not uniformly distributed in log space. We resolved this by sampling 200 random sequence positions per rollout, this gave a metric to optimise over that was closer to the task at hand, giving equal optimisation power to sequences of different lengths.</p>
+        </div>
+        
+        <p>We proceed using the balanced_lin_to_log estimator. Using which, we were able to graph how the predictions varied token-by-token in generation and use these to analyse how the model dynamically updates according to the most recently generated token, as well as expectations about upcoming tokens. Beginning with the latter, we find that predictions consistently drop precipitously in the ~50 tokens / sentence prior to the &lt;/think&gt; token. We demonstrate this by comparing the typical drop in the tokens prior to &lt;/think&gt;, with the baseline typical decrease during the rest of generation. On average, seeing a drop of 4 toks/token running up to &lt;/think&gt; vs 0.8 as the baseline. This suggests the model is engaging in some level of planning, given it consistently updates its predictions downwards well in advance of that specific token. This also suggests the probe is working as expected as the model often knows in its concluding sentence to say &lt;/think&gt; after.</p>
+        
+        <div class="image-container">
+            <img src="images/image28.png" alt="Drop before think token" style="max-width: 60%;">
+        </div>
+        
+        <p>We additionally provide some examples of the progress bar in the runup to &lt;/think&gt;, demonstrating significant drops. The line corresponds to the predictions made by the model at each token, the first graph shown applies an EMA of 0.9 to the predictions for stability. Note the steady increase until ~60 tokens prior to &lt;/think&gt;.</p>
+        
+        <div class="image-container">
+            <img src="images/image21.png" alt="Progress bar with EMA">
+        </div>
+        
+        <p>We can investigate this further however, by removing the EMA. This gives us a noisier graph but reveals that the actual effect of an imminent &lt;/think&gt; is to bring far more consistency to the model's own predictions at consecutive timesteps.</p>
+        
+        <div class="image-container">
+            <img src="images/image15.png" alt="Progress bar without EMA">
+        </div>
+        
+        <p>The above is given for a single prompt <em>"What is 2 + 2?"</em>, we identify that the same observation is found for many other prompts.</p>
+        
+        <div class="image-container">
+            <img src="images/image3.png" alt="Damascus example 1" style="max-width: 45%; display: inline-block; margin: 10px;">
+            <img src="images/image11.png" alt="Damascus example 2" style="max-width: 45%; display: inline-block; margin: 10px;">
+            <p class="image-caption">(note, these two graphs are from different rollouts of the same prompt "Write a short history of Damascus")</p>
+        </div>
+        
+        <p>We can now consider the former, how the model updates according to the most recently generated token. This is identified by taking an actual model response, pausing it after a full stop, then comparing the results of appending varying different tokens to the response and predicting the length on that new token. This has the effect of identifying which directions of thought correspond to bringing models closer to completing their response, and which push them away. We find strong evidence that it is certain tokens like <em>"Definitely"</em> and <em>"Finally"</em> that bring models closer, and uncertain tokens like <em>"Wait", "Maybe"</em>, and <em>"Alternatively"</em> that push them away. This likely corresponds to the fact that uncertain tokens cause models to retry a problem in a different way. We take as baseline the probe's prediction on just the paused model response.</p>
+        
+        <div class="image-container">
+            <img src="images/image9.png" alt="Token effects">
+        </div>
+        
+        <p>However, the effect is sensitive to the actual plausibility of the response + appendation. For example, in the above graph, the preceding line reads <em>"...So I should assume it's in base 10, the standard system.\n\n"</em>. Appending any of the tested tokens to this is at least plausible and correct English. Taking instead, <em>"...So I should assume it's in base"</em> as the prefix causes the effect to reverse. This is because none of those appendations form correct English when placed after that prefix, <em>"...So I should assume it's in base Bingo"</em> being an atypical turn of phrase.</p>
+        
+        <div class="image-container">
+            <img src="images/image36.png" alt="Reversed token effects">
+        </div>
+        
+        <p>A more robust way to identify this effect, then, is to take the direction learnt by the probe, steer with it, and review which logits are boosted and suppressed. Doing so results in this set of tokens.</p>
+        
+        <div class="image-container">
+            <img src="images/image27.png" alt="Positive steering effects">
+            <img src="images/image32.png" alt="Negative steering effects" style="margin-top: 20px;">
+        </div>
+        
+        <p>Some interesting things to note here are that several of the tokens boosted by positive steering (i.e. turning up length) are uncertain tokens, <em>"perhaps"</em> being the most significant of these. The other combinations are less interpretable. The suppression of <em>&lt;|endoftext|&gt;</em> by positive steering is perhaps expected, as the only token that guarantees response shortness being premature conclusion. Negative steering is less obviously interpretable, maybe formatting characters cause the model to move on and rattle through sentences more swiftly.</p>
+        
+        <p>EMA-smoothing showed slight improvement on predictions, this is likely by counteracting the token-by-token noise seen in a previous graph. Note, we ignore the first 5 tokens as these were especially volatile, tending to be particularly low, this was especially harmful to EMA. Indicating possibly the model could be improved by incorporating / averaging the previous token information e.g. via an attention-probe:</p>
+        
+        <div class="image-container">
+            <img src="images/image2.png" alt="EMA smoothing analysis">
+        </div>
+        
+        <p>We debugged the drop in performance towards the end of rollouts (corresponding to the very end of a model's completion). We found the rotational behaviour as seen initially (though to a much lesser degree). The below PCA plots are doing a PCA over the mean of the residual stream in each bin in 2560 dim space. (i.e. have 19x2560 tensor, map to 19x3 principle components). We include the direction of the lin_to_log probe for reference.</p>
+        
+        <div class="iframe-container">
+            <iframe src="bin_avg_acts_pca_balanced_lin.html" height="800" width="1000"></iframe>
+        </div>
+        
+        <div class="image-container">
+            <img src="images/image7.png" alt="PCA plot 1" style="max-width: 48%; display: inline-block;">
+            <img src="images/image16.png" alt="PCA plot 2" style="max-width: 48%; display: inline-block;">
+        </div>
+        
+        <div class="image-container">
+            <img src="images/image20.png" alt="PCA plot 3">
+            <img src="images/image4.png" alt="PCA plot 4" style="margin-top: 20px;">
+        </div>
+        
+        <p>This combines our results together of finding largely a linear representation, but with some rotational behaviour over 2 of the PCA dims.</p>
+        
+        <p>With this in mind, we investigated the trajectories of responses. In the first case, by projecting the residual stream at each step in generation onto the learnt direction of the probe. This yields a set of curves visualised below. As token_idx increases, i.e. as the response gets closer to completion, the prediction decreases, this follows somewhat of an exponential, which is to be expected given the probe has been trained to predict log(n_remaining tokens).</p>
+        
+        <div class="image-container">
+            <img src="images/image6.png" alt="Response trajectories">
+        </div>
+        
+        <p>We then return to the log_bin_classifier to see how the residual stream moves between phases. The following graph is found by taking the softmax of the classifier's predictions at each step of the generation. Then splitting these predictions up by bin, such that we can see the probability assigned by the probe to each bin at each step of generation. The part of the generation actually meant to correspond to the bin (for bin <em>n</em> the token_idxs between exp(<em>n</em>) and exp(<em>n+1</em>)) is coloured orange (or omitted if not on graph), and token_idx of &lt;/think&gt; is given a green axis line. Notable from this graph is the transition between bins, this is characterised by a gradual increase prior to entering the orange section for each bin. This indicates we are learning some continuous bins that transition into each other. Also interesting is the effect of &lt;/think&gt; on the bins, in the below example causing the model to very rapidly move from predicting bin 7 to bin 6.</p>
+        
+        <div class="image-container">
+            <img src="images/image34.png" alt="Bin transitions">
+        </div>
+        
+        <p>We then investigate the actual trajectories in PCA space. We take as the basis of the PCA the mean of the residual streams within each of 19 bins. This performs well, the top 3 components explaining 87.65% of the variance of the mean bins. With this space established, we can investigate how responses move through it. Some of these are included below.</p>
+        
+        <p>Some examples down here (percentage variance is for explaining the mean bins as above):</p>
+        
+        <div class="iframe-container">
+            <iframe src="trajectory2_no_ema_no_bin_points.html" height="800" width="1000"></iframe>
+        </div>
+        
+        <div class="iframe-container">
+            <iframe src="trajectory1_no_ema_bin_points.html" height="800" width="1000"></iframe>
+        </div>
+        
+        <h2>Short Post-Mortem on Misleading Initial Results</h2>
+        
+        <p>In the initial analysis we did, we looked at the PCA of the weights of a logistic classifier predicting the floor(log(n_tokens_remaining)) i.e. a classification into the rough order of magnitude. We found later on that this method of analysing a representation is conceptually flawed, as shown by the following example:</p>
+        
+        <ul>
+            <li>If you have a truly linearly distributed representation, the weights of the logistic classifier from binning are not globally optimised by being linearly represented. This is shown in this diagram:</li>
+        </ul>
+        
+        <div class="image-container">
+            <img src="images/image5.png" alt="Conceptual diagram">
+        </div>
+        
+        <ul>
+            <li>And also shown empirically with a toy dataset:</li>
+        </ul>
+        
+        <div class="image-container">
+            <img src="images/image10.png" alt="Toy dataset results">
+        </div>
+        
+        <ul>
+            <li>Thus, the absence of a linear representation when looking at the weights of a logistic classifier is not conclusive evidence that there is no linear representation. We would recommend looking directly at the residual stream vectors directly if trying such analysis.</li>
+        </ul>
+        
+    </div>
+</body>
+</html>
