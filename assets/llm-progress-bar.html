@@ -243,17 +243,12 @@
         <p>We debugged the drop in performance towards the end of rollouts (corresponding to the very end of a model's completion). We found the rotational behaviour as seen initially (though to a much lesser degree). The below PCA plots are doing a PCA over the mean of the residual stream in each bin in 2560 dim space. (i.e. have 19x2560 tensor, map to 19x3 principle components). We include the direction of the lin_to_log probe for reference.</p>
         
         <div class="iframe-container">
-            <iframe src="bin_avg_acts_pca_balanced_lin.html" height="800" width="1000"></iframe>
+            <iframe src="bin_avg_acts_pca_balanced_lin.html" height="600" width="600"></iframe>
         </div>
-        
-        <div class="image-container">
-            <img src="images/image7.png" alt="PCA plot 1" style="max-width: 48%; display: inline-block;">
-            <img src="images/image16.png" alt="PCA plot 2" style="max-width: 48%; display: inline-block;">
-        </div>
+
         
         <div class="image-container">
             <img src="images/image20.png" alt="PCA plot 3">
-            <img src="images/image4.png" alt="PCA plot 4" style="margin-top: 20px;">
         </div>
         
         <p>This combines our results together of finding largely a linear representation, but with some rotational behaviour over 2 of the PCA dims.</p>
@@ -271,16 +266,16 @@
         </div>
         
         <p>We then investigate the actual trajectories in PCA space. We take as the basis of the PCA the mean of the residual streams within each of 19 bins. This performs well, the top 3 components explaining 87.65% of the variance of the mean bins. With this space established, we can investigate how responses move through it. Some of these are included below.</p>
-        
-        <p>Some examples down here (percentage variance is for explaining the mean bins as above):</p>
-        
+                
         <div class="iframe-container">
-            <iframe src="trajectory2_no_ema_no_bin_points.html" height="800" width="1000"></iframe>
+            <iframe src="trajectory2_no_ema_no_bin_points.html" height="600" width="600"></iframe>
         </div>
         
         <div class="iframe-container">
-            <iframe src="trajectory1_no_ema_bin_points.html" height="800" width="1000"></iframe>
+            <iframe src="trajectory1_no_ema_bin_points.html" height="600" width="600"></iframe>
         </div>
+
+        <p>While not included here because of an ill devised runpod termination, an interesting anecdote is that in PCA space, the &lt;/think&gt; token always appears in a very distinct cluster. This cluster is far out from the main blobs and closer (if anything) to the bin 1. Hypotheses about why this is do not yet exist. However a brief attempt at steering models into this space did not yield any results.</p>
         
         <h2>Short Post-Mortem on Misleading Initial Results</h2>
         
