@@ -11,7 +11,7 @@ date: 2025-11-04
     margin: 0 !important;
   }
   #content-iframe {
-    width: calc(100vw - 150px);
+    width: calc(100vw - 250px);
     border: none;
     overflow: hidden;
     display: block;
