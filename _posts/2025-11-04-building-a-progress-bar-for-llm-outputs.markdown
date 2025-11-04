@@ -8,14 +8,16 @@ date: 2025-11-04
   .post-content {
     max-width: none !important;
     padding: 0 !important;
+    margin: 0 !important;
   }
   #content-iframe {
-    width: 100vw;
-    max-width: 100%;
+    width: calc(100vw - 150px);
     border: none;
     overflow: hidden;
     display: block;
-    margin-left: calc(-50vw + 50%);
+    margin-left: 0;
+    position: relative;
+    left: 0;
   }
 </style>
 
