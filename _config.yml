@@ -4,16 +4,14 @@ description: > # this means to ignore newlines until "baseurl:"
   I'm working on and maybe even a blog post. If I ever get around to it.
 permalink: ':title/'
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://broverfitter.github.com" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://jrh-mann.github.com" # the base hostname & protocol for your site, e.g. http://example.com
 site-twitter: #if your site has a twitter account, enter it here
 
 # Author Settings
 author: James Mann # add your name
 author-img: james.jpg # add your photo
-about-author: I like to work on and think about AI. I also like rowing, chess and reading.
-social-twitter: broverfitter
 social-facebook: 
-social-github: broverfitter # add your Github handle
+social-github: jrh-mann # add your Github handle
 social-linkedin: jrhmann
 social-email: james.mann.24@ucl.ac.uk
 current_book: South From Granada
