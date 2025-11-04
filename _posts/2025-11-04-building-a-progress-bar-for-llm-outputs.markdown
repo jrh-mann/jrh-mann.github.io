@@ -134,6 +134,7 @@ date: 2025-11-04
 </style>
 
 <div class="container">
+    <p>Cowritten with <a href="https://www.linkedin.com/in/hasanbaig8/edit/forms/next-action/after-connect-add-position/">Hasan</a>
     <p>A priori, measuring how many more tokens an LLM will produce is not necessarily an easy task. The LLM might decide this early on, or update its estimate on the fly. In this project, we investigate how LLMs (Qwen3-4b) represent n_tokens_remaining, by analysing the residual stream.</p>
     
     <p>We initially hypothesised that the model could represent this directly with a linear regression, or represent the log of this linearly, or do something outright different altogether. We investigated these hypotheses in turn. Producing a probe trained to predict n_tokens_remaning directly - lin_to_lin; a probe trained to predict log(n_tokens_remaining) - lin_to_log; and a probe trained to classify residuals into bins, where bin <em>n</em> covers all the residuals corresponding to between exp(<em>n</em>) and exp(<em>n+1</em>) tokens remaining - log_bin_classifier. All experiments are done on layer 15 of Qwen3-4B, a model with 36 layers.</p>
