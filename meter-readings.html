@@ -20,6 +20,10 @@ permalink: /meter-readings/
         </div>
     </div>
 
+    <div class="chart-controls">
+        <button id="toggleViewBtn" class="toggle-btn">Switch to Usage per Period</button>
+    </div>
+    
     <div class="chart-container">
         <canvas id="meterChart"></canvas>
     </div>
@@ -70,7 +74,7 @@ const meterData = [
 const electricityBaseline = meterData[0].electricity;
 const gasBaseline = meterData.find(d => d.gas !== null)?.gas || 0;
 
-// Calculate usage from baselines
+// Calculate usage from baselines (cumulative)
 const usageData = meterData.map(d => ({
     date: d.date,
     rawElectricity: d.electricity,
@@ -78,6 +82,38 @@ const usageData = meterData.map(d => ({
     electricityUsage: d.electricity - electricityBaseline,
     gasUsage: d.gas !== null ? d.gas - gasBaseline : null
 }));
+
+// Calculate period-based usage (gradient between readings)
+const periodUsageData = [];
+for (let i = 1; i < meterData.length; i++) {
+    const prev = meterData[i - 1];
+    const curr = meterData[i];
+    
+    // Calculate days between readings
+    const prevDate = new Date(prev.date);
+    const currDate = new Date(curr.date);
+    const daysBetween = Math.max(1, (currDate - prevDate) / (1000 * 60 * 60 * 24));
+    
+    // Calculate usage between readings
+    const elecUsage = curr.electricity - prev.electricity;
+    const gasUsage = (prev.gas !== null && curr.gas !== null) ? curr.gas - prev.gas : null;
+    
+    // Calculate daily rate for this period
+    const elecDailyRate = elecUsage / daysBetween;
+    const gasDailyRate = gasUsage !== null ? gasUsage / daysBetween : null;
+    
+    periodUsageData.push({
+        date: curr.date,
+        electricityPeriodUsage: elecUsage,
+        gasPeriodUsage: gasUsage,
+        electricityDailyRate: elecDailyRate,
+        gasDailyRate: gasDailyRate,
+        daysBetween: daysBetween
+    });
+}
+
+// Track current view mode
+let viewMode = 'cumulative'; // 'cumulative' or 'usage'
 
 // Create chart
 const ctx = document.getElementById('meterChart').getContext('2d');
@@ -123,7 +159,7 @@ const chart = new Chart(ctx, {
         plugins: {
             title: {
                 display: true,
-                text: 'Utility Usage Since Move-in (July 9th)',
+                text: 'Cumulative Usage Since Move-in (July 9th)',
                 font: {
                     size: 18,
                     weight: 'bold'
@@ -131,6 +167,31 @@ const chart = new Chart(ctx, {
             },
             legend: {
                 position: 'top',
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += context.parsed.y.toFixed(1);
+                            if (viewMode === 'usage') {
+                                // Find the corresponding period data
+                                const dataPoint = periodUsageData.find(d => d.date === context.label);
+                                if (dataPoint) {
+                                    const days = dataPoint.daysBetween.toFixed(1);
+                                    const dailyRate = context.datasetIndex === 0 ? 
+                                        dataPoint.electricityDailyRate.toFixed(2) : 
+                                        dataPoint.gasDailyRate?.toFixed(2);
+                                    label += ` (${days} days, ${dailyRate}/day)`;
+                                }
+                            }
+                        }
+                        return label;
+                    }
+                }
             }
         },
         scales: {
@@ -154,7 +215,7 @@ const chart = new Chart(ctx, {
                 position: 'left',
                 title: {
                     display: true,
-                    text: 'Electricity Usage (kWh)',
+                    text: 'Electricity (kWh)',
                     color: '#3498db'
                 },
                 ticks: {
@@ -167,7 +228,7 @@ const chart = new Chart(ctx, {
                 position: 'right',
                 title: {
                     display: true,
-                    text: 'Gas Usage (m³)',
+                    text: 'Gas (m³)',
                     color: '#e74c3c'
                 },
                 ticks: {
@@ -179,6 +240,50 @@ const chart = new Chart(ctx, {
             }
         }
     }
+});
+
+// Toggle between cumulative and usage per period views
+document.getElementById('toggleViewBtn').addEventListener('click', function() {
+    if (viewMode === 'cumulative') {
+        // Switch to usage per period view
+        viewMode = 'usage';
+        this.textContent = 'Switch to Cumulative View';
+        
+        chart.data.datasets[0].data = periodUsageData.map(d => ({
+            x: d.date,
+            y: d.electricityPeriodUsage
+        }));
+        
+        chart.data.datasets[1].data = periodUsageData.filter(d => d.gasPeriodUsage !== null).map(d => ({
+            x: d.date,
+            y: d.gasPeriodUsage
+        }));
+        
+        chart.options.plugins.title.text = 'Usage per Period Between Readings';
+        chart.options.scales.y.title.text = 'Electricity per Period (kWh)';
+        chart.options.scales.y1.title.text = 'Gas per Period (m³)';
+        
+    } else {
+        // Switch back to cumulative view
+        viewMode = 'cumulative';
+        this.textContent = 'Switch to Usage per Period';
+        
+        chart.data.datasets[0].data = usageData.map(d => ({
+            x: d.date,
+            y: d.electricityUsage
+        }));
+        
+        chart.data.datasets[1].data = usageData.filter(d => d.gasUsage !== null).map(d => ({
+            x: d.date,
+            y: d.gasUsage
+        }));
+        
+        chart.options.plugins.title.text = 'Cumulative Usage Since Move-in (July 9th)';
+        chart.options.scales.y.title.text = 'Electricity (kWh)';
+        chart.options.scales.y1.title.text = 'Gas (m³)';
+    }
+    
+    chart.update();
 });
 
 // Populate table

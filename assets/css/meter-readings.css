@@ -60,6 +60,33 @@
     margin: 0;
 }
 
+.chart-controls {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.toggle-btn {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+}
+
+.toggle-btn:active {
+    transform: translateY(0);
+}
+
 .chart-container {
     background: white;
     border-radius: 12px;
