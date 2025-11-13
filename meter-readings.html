@@ -245,23 +245,23 @@ const chart = new Chart(ctx, {
 // Toggle between cumulative and usage per period views
 document.getElementById('toggleViewBtn').addEventListener('click', function() {
     if (viewMode === 'cumulative') {
-        // Switch to usage per period view
+        // Switch to usage per period view (normalized by days)
         viewMode = 'usage';
         this.textContent = 'Switch to Cumulative View';
         
         chart.data.datasets[0].data = periodUsageData.map(d => ({
             x: d.date,
-            y: d.electricityPeriodUsage
+            y: d.electricityDailyRate
         }));
         
-        chart.data.datasets[1].data = periodUsageData.filter(d => d.gasPeriodUsage !== null).map(d => ({
+        chart.data.datasets[1].data = periodUsageData.filter(d => d.gasDailyRate !== null).map(d => ({
             x: d.date,
-            y: d.gasPeriodUsage
+            y: d.gasDailyRate
         }));
         
-        chart.options.plugins.title.text = 'Usage per Period Between Readings';
-        chart.options.scales.y.title.text = 'Electricity per Period (kWh)';
-        chart.options.scales.y1.title.text = 'Gas per Period (m³)';
+        chart.options.plugins.title.text = 'Daily Usage Rate by Period';
+        chart.options.scales.y.title.text = 'Electricity per Day (kWh/day)';
+        chart.options.scales.y1.title.text = 'Gas per Day (m³/day)';
         
     } else {
         // Switch back to cumulative view
