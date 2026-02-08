@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inspect Evals — Research Support Program</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+            --serif: 'IBM Plex Serif', Georgia, serif;
+            --black: #1a1a1a;
+            --body: #3d3d3d;
+            --muted: #737373;
+            --light: #a3a3a3;
+            --rule: #e5e5e5;
+            --wash: #f7f7f7;
+            --white: #ffffff;
+            --teal: #0a6e5c;
+            --teal-light: #e8f5f1;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--white);
+            color: var(--body);
+            font-size: 17px;
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        ::selection {
+            background: var(--teal-light);
+            color: var(--black);
+        }
+
+        /* ── Nav ──────────────────────────────────── */
+        nav {
+            padding: 28px 0;
+            border-bottom: 1px solid var(--rule);
+        }
+        nav .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .wordmark {
+            font-family: var(--sans);
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: -0.01em;
+            color: var(--black);
+        }
+        .wordmark span {
+            color: var(--muted);
+            font-weight: 400;
+        }
+        nav a {
+            font-size: 14px;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        nav a:hover { color: var(--black); }
+
+        /* ── Layout ───────────────────────────────── */
+        .wrap {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+        .narrow { max-width: 640px; }
+
+        /* ── Hero ─────────────────────────────────── */
+        .hero {
+            padding: 96px 0 80px;
+        }
+        .hero .label {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-bottom: 20px;
+        }
+        .hero h1 {
+            font-family: var(--serif);
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 600;
+            line-height: 1.15;
+            color: var(--black);
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+        }
+        .hero .lede {
+            font-size: 19px;
+            line-height: 1.6;
+            color: var(--muted);
+            max-width: 520px;
+        }
+
+        /* ── Sections ─────────────────────────────── */
+        section {
+            padding: 72px 0;
+        }
+        section.ruled {
+            border-top: 1px solid var(--rule);
+        }
+        .section-head {
+            margin-bottom: 40px;
+        }
+        .section-head .label {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-bottom: 12px;
+        }
+        .section-head h2 {
+            font-family: var(--serif);
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--black);
+            letter-spacing: -0.015em;
+            line-height: 1.3;
+        }
+        .section-head p {
+            margin-top: 12px;
+            color: var(--muted);
+            max-width: 480px;
+        }
+
+        /* ── Benefits grid ────────────────────────── */
+        .benefits {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--rule);
+            border: 1px solid var(--rule);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .benefit {
+            background: var(--white);
+            padding: 32px;
+        }
+        .benefit h3 {
+            font-family: var(--sans);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--black);
+            margin-bottom: 6px;
+        }
+        .benefit p {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        /* ── Tiers ────────────────────────────────── */
+        .tiers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 8px;
+        }
+        .tier {
+            border: 1px solid var(--rule);
+            border-radius: 8px;
+            padding: 28px 24px;
+        }
+        .tier-num {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--light);
+            margin-bottom: 10px;
+        }
+        .tier h3 {
+            font-family: var(--sans);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--black);
+            margin-bottom: 8px;
+            line-height: 1.35;
+        }
+        .tier p {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        /* ── Orgs ─────────────────────────────────── */
+        .orgs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        .org {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--body);
+            background: var(--wash);
+            border: 1px solid var(--rule);
+            padding: 6px 14px;
+            border-radius: 100px;
+            white-space: nowrap;
+        }
+
+        /* ── Quote ────────────────────────────────── */
+        .quote {
+            margin-top: 48px;
+            padding: 32px 0;
+            border-top: 1px solid var(--rule);
+        }
+        .quote blockquote {
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 18px;
+            line-height: 1.65;
+            color: var(--body);
+            max-width: 560px;
+        }
+        .quote cite {
+            display: block;
+            margin-top: 16px;
+            font-family: var(--sans);
+            font-style: normal;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        .quote cite strong {
+            color: var(--black);
+            font-weight: 600;
+        }
+
+        /* ── Checklist ────────────────────────────── */
+        .checklist {
+            list-style: none;
+            margin-top: 20px;
+        }
+        .checklist li {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--rule);
+            font-size: 16px;
+            padding-left: 28px;
+            position: relative;
+        }
+        .checklist li:last-child { border-bottom: none; }
+        .checklist li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--teal);
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .aside {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--light);
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        /* ── FAQs ─────────────────────────────────── */
+        .faq-list { margin-top: 8px; }
+        .faq {
+            border-bottom: 1px solid var(--rule);
+        }
+        .faq:first-child {
+            border-top: 1px solid var(--rule);
+        }
+        .faq summary {
+            padding: 20px 36px 20px 0;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--black);
+            cursor: pointer;
+            list-style: none;
+            position: relative;
+        }
+        .faq summary::-webkit-details-marker { display: none; }
+        .faq summary::after {
+            content: '+';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            font-weight: 300;
+            color: var(--light);
+        }
+        .faq[open] summary::after { content: '−'; }
+        .faq summary:hover { color: var(--teal); }
+        .faq-body {
+            padding: 0 0 20px;
+            font-size: 15px;
+            color: var(--muted);
+            line-height: 1.65;
+            max-width: 560px;
+        }
+
+        /* ── Footer ───────────────────────────────── */
+        footer {
+            border-top: 1px solid var(--rule);
+            padding: 40px 0;
+        }
+        footer p {
+            font-size: 13px;
+            color: var(--light);
+        }
+        footer a {
+            color: var(--muted);
+            text-decoration: none;
+        }
+        footer a:hover {
+            color: var(--black);
+        }
+
+        /* ── Responsive ───────────────────────────── */
+        @media (max-width: 680px) {
+            body { font-size: 16px; }
+            .wrap { padding: 0 20px; }
+            .hero { padding: 64px 0 56px; }
+            section { padding: 56px 0; }
+            .benefits { grid-template-columns: 1fr; }
+            .tiers { grid-template-columns: 1fr; }
+            .hero .lede { font-size: 17px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="wrap">
+        <div class="wordmark">Inspect Evals <span>/ Research Support</span></div>
+        <a href="#faq">FAQ</a>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="wrap">
+        <div class="label">Cohort 1 — Applications Open</div>
+        <h1>Research Support<br>Program</h1>
+        <p class="lede">We're supporting 10 researchers at the frontier of AI evaluation — with engineering support, compute, and long-term maintenance.</p>
+    </div>
+</header>
+
+<section class="ruled">
+    <div class="wrap">
+        <div class="section-head">
+            <div class="label">Benefits</div>
+            <h2>What you get</h2>
+            <p>Everything you need to go from idea to a published, production-grade benchmark.</p>
+        </div>
+
+        <div class="benefits">
+            <div class="benefit">
+                <h3>Engineering support</h3>
+                <p>Dedicated Inspect experts for PR reviews, design advice, and hands-on implementation help.</p>
+            </div>
+            <div class="benefit">
+                <h3>$500 compute credits</h3>
+                <p>A compute grant to develop and iterate on your benchmark without worrying about infrastructure.</p>
+            </div>
+            <div class="benefit">
+                <h3>QA &amp; testing</h3>
+                <p>Rigorous processes to ensure your benchmark is bug-free at merge and reliable for downstream users.</p>
+            </div>
+            <div class="benefit">
+                <h3>Ongoing maintenance</h3>
+                <p>A full-time team of five engineers handles bugs and feature requests after your benchmark ships.</p>
+            </div>
+            <div class="benefit">
+                <h3>Weekly office hours</h3>
+                <p>Drop-in technical Q&amp;A every week, plus monthly one-on-ones with the technical lead.</p>
+            </div>
+            <div class="benefit">
+                <h3>Maximise reach</h3>
+                <p>Your evaluation is instantly available to every organisation using Inspect. We promote it to the broader community.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="ruled">
+    <div class="wrap">
+        <div class="section-head">
+            <div class="label">Engagement</div>
+            <h2>Tailored to where you are</h2>
+            <p>All support is optional. Pick the level that fits your project.</p>
+        </div>
+
+        <div class="tiers">
+            <div class="tier">
+                <div class="tier-num">Tier 1</div>
+                <h3>Full design &amp; implementation</h3>
+                <p>We help refine your evaluation design and map it onto Inspect from the ground up.</p>
+            </div>
+            <div class="tier">
+                <div class="tier-num">Tier 2</div>
+                <h3>Implementation feedback</h3>
+                <p>You build it. We review code, suggest patterns, and provide feedback throughout.</p>
+            </div>
+            <div class="tier">
+                <div class="tier-num">Tier 3</div>
+                <h3>Final PR review</h3>
+                <p>Your benchmark is ready. We do a thorough review and get it merged.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="ruled">
+    <div class="wrap">
+        <div class="section-head">
+            <div class="label">Ecosystem</div>
+            <h2>Who uses Inspect?</h2>
+            <p>The default framework for major international AI evaluation efforts.</p>
+        </div>
+
+        <div class="orgs">
+            <span class="org">UK AISI</span>
+            <span class="org">METR</span>
+            <span class="org">Epoch AI</span>
+            <span class="org">NIST</span>
+            <span class="org">Google DeepMind</span>
+            <span class="org">Anthropic</span>
+            <span class="org">OpenAI</span>
+            <span class="org">Vector Institute</span>
+            <span class="org">Redwood Research</span>
+            <span class="org">RAND</span>
+            <span class="org">SecureBio</span>
+            <span class="org">AI2</span>
+            <span class="org">Weights &amp; Biases</span>
+            <span class="org">Hugging Face</span>
+        </div>
+
+        <div class="quote">
+            <blockquote>
+                "I really appreciated the feedback — it's actively developed, there's a chat channel, so I can ask questions and get feedback, which is great."
+            </blockquote>
+            <cite><strong>Ziyue Wang</strong> — Research Engineer, Google DeepMind</cite>
+        </div>
+    </div>
+</section>
+
+<section class="ruled">
+    <div class="wrap">
+        <div class="section-head">
+            <div class="label">Requirements</div>
+            <h2>Eligibility</h2>
+        </div>
+
+        <ul class="checklist">
+            <li>Affiliated with an academic or nonprofit research group</li>
+            <li>Planning to develop, or currently developing, a benchmark</li>
+            <li>Plan to submit to an academic outlet before 1 July 2026</li>
+        </ul>
+        <p class="aside">Industry groups can submit benchmarks via the regular review process but are not eligible for additional support. Academic researchers with short-term industry affiliations remain eligible.</p>
+    </div>
+</section>
+
+<section class="ruled" id="faq">
+    <div class="wrap">
+        <div class="section-head">
+            <div class="label">Questions</div>
+            <h2>FAQ</h2>
+        </div>
+
+        <div class="faq-list">
+            <details class="faq">
+                <summary>What is Inspect AI?</summary>
+                <div class="faq-body">An open-source evaluation framework created by JJ Allaire (founder of RStudio). It gives governments, industry, and academia a common framework for developing and running agentic evaluations.</div>
+            </details>
+            <details class="faq">
+                <summary>Do the Inspect Evals team need to be cited?</summary>
+                <div class="faq-body">Co-authorship is not a requirement. For academic integrity, we advise listing Inspect Evals in the acknowledgements — especially if compute credits produce results for the paper. A mention in the methodology section is appreciated.</div>
+            </details>
+            <details class="faq">
+                <summary>Who owns the code?</summary>
+                <div class="faq-body">Licensing and intellectual property remain with the original authors. Authorship is cited within the benchmark's README.</div>
+            </details>
+            <details class="faq">
+                <summary>What if my benchmark is private?</summary>
+                <div class="faq-body">For private benchmarks or those with embargo dates, we can arrange confidentiality agreements and modify our processes to align with your infosecurity requirements.</div>
+            </details>
+            <details class="faq">
+                <summary>What if I disagree with the maintainers?</summary>
+                <div class="faq-body">If the disagreement is about capacity, we take on additional work if justified. For best-practice differences, we accommodate both approaches where possible — for example, via a parameter. The only hard requirements are security requirements for organisational users.</div>
+            </details>
+            <details class="faq">
+                <summary>What if my plans change?</summary>
+                <div class="faq-body">If there are significant deviations from the agreed scope, involvement is reviewed. Adjustments are agreed mutually — for example, a position in the next cohort if unexpected delays occur.</div>
+            </details>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="wrap">
+        <p>Inspect Evals — Research Support Program · Built on <a href="https://inspect.ai-safety-institute.org.uk/">Inspect AI</a></p>
+    </div>
+</footer>
+
+</body>
+</html>
