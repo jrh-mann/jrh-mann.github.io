@@ -30,6 +30,7 @@
   <!-- Hero: Full-width video with large red circle overlay from left -->
   <section class="hero-home">
     <div class="hero-video-bg" id="hero-video-bg">
+      <img src="images/gallery/fmvc_041.jpg" alt="" class="hero-bg-media" id="hero-poster">
       <div id="yt-player"></div>
     </div>
     <div class="hero-circle-overlay">
@@ -226,6 +227,15 @@
           },
           onStateChange: function(e) {
             if (e.data === YT.PlayerState.PLAYING) {
+              var poster = document.getElementById('hero-poster');
+              if (poster && poster.style.opacity !== '0') {
+                // Fade poster to black, then reveal video
+                poster.style.opacity = '0';
+                setTimeout(function() {
+                  var playerEl = document.querySelector('#yt-player');
+                  if (playerEl) playerEl.style.opacity = '1';
+                }, 1000);
+              }
               // Loop back to 1:07 when reaching 1:24
               setInterval(function() {
                 if (e.target.getCurrentTime() >= heroEnd) {

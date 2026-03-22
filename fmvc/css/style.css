@@ -174,15 +174,21 @@ h1, h2, h3, h4 {
   pointer-events: none;
 }
 
-/* Poster fallback — fades out when video starts */
+/* Poster — fades to black over 1s */
 .hero-bg-media {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 1;
-  transition: opacity 1.5s ease;
+  z-index: 2;
+  transition: opacity 1s ease;
+}
+
+/* YouTube player — starts invisible, fades in after poster goes black */
+#yt-player {
+  opacity: 0;
+  transition: opacity 1s ease;
 }
 
 /* YouTube iframe created by API */
