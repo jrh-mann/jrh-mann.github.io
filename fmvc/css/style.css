@@ -181,7 +181,7 @@ h1, h2, h3, h4 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 75% center;
+  object-position: 85% center;
   z-index: 2;
   transition: opacity 1s ease;
 }
