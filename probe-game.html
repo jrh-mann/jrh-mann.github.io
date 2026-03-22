@@ -1,0 +1,418 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Can You Beat an LLM at Demographic Inference?</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Georgia', serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        .subtitle {
+            color: #888;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+        .subtitle a { color: #4ECDC4; }
+
+        /* Intro screen */
+        #intro {
+            text-align: center;
+            padding: 4rem 0;
+        }
+        #intro h1 { font-size: 2.2rem; margin-bottom: 1rem; }
+        #intro p { color: #aaa; font-size: 1.05rem; line-height: 1.6; max-width: 550px; margin: 0 auto 2rem; }
+        .start-btn {
+            background: #4ECDC4;
+            color: #0f0f1a;
+            border: none;
+            padding: 0.9rem 2.5rem;
+            font-size: 1.1rem;
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .start-btn:hover { background: #3dbdb5; }
+
+        /* Game screen */
+        #game { display: none; }
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: #888;
+        }
+        .progress .count { color: #4ECDC4; font-weight: bold; }
+
+        .text-box {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.92rem;
+            line-height: 1.7;
+            color: #ccc;
+        }
+        .text-box::-webkit-scrollbar { width: 6px; }
+        .text-box::-webkit-scrollbar-track { background: #1a1a2e; }
+        .text-box::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        .question {
+            margin-bottom: 1.2rem;
+        }
+        .question-label {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 0.6rem;
+            color: #ddd;
+        }
+        .options {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .option-btn {
+            background: #1a1a2e;
+            border: 2px solid #2a2a4a;
+            color: #ccc;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.95rem;
+            font-family: 'Georgia', serif;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+        }
+        .option-btn:hover { border-color: #4ECDC4; color: #fff; }
+        .option-btn.selected { border-color: #4ECDC4; background: #1a2a2e; color: #4ECDC4; }
+        .option-btn.correct { border-color: #66BB6A; background: #1a2e1a; color: #66BB6A; }
+        .option-btn.wrong { border-color: #EF5350; background: #2e1a1a; color: #EF5350; }
+        .option-btn.was-correct { border-color: #66BB6A; opacity: 0.6; }
+        .option-btn[disabled] { cursor: default; }
+
+        .submit-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+        .submit-btn, .next-btn {
+            background: #4ECDC4;
+            color: #0f0f1a;
+            border: none;
+            padding: 0.7rem 2rem;
+            font-size: 1rem;
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .submit-btn:hover, .next-btn:hover { background: #3dbdb5; }
+        .submit-btn:disabled { background: #333; color: #666; cursor: default; }
+
+        .feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            display: none;
+        }
+        .feedback.show { display: block; }
+        .feedback.correct { background: #1a2e1a; border: 1px solid #66BB6A; }
+        .feedback.wrong { background: #2e1a1a; border: 1px solid #EF5350; }
+
+        /* Results screen */
+        #results { display: none; text-align: center; padding: 2rem 0; }
+        #results h2 { font-size: 1.8rem; margin-bottom: 1.5rem; }
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            max-width: 500px;
+            margin: 0 auto 2rem;
+        }
+        .result-card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            padding: 1.2rem;
+        }
+        .result-card .label { color: #888; font-size: 0.85rem; margin-bottom: 0.3rem; }
+        .result-card .value { font-size: 1.8rem; font-weight: bold; }
+        .result-card .value.age { color: #FF6B6B; }
+        .result-card .value.gender { color: #4ECDC4; }
+
+        .equivalent {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            padding: 1.5rem;
+            max-width: 500px;
+            margin: 0 auto 2rem;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .equivalent .size {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #FFE66D;
+        }
+
+        .scaling-note {
+            color: #666;
+            font-size: 0.85rem;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Intro -->
+        <div id="intro">
+            <h1>Can You Beat an LLM?</h1>
+            <p>
+                Read blog posts from 2004 and guess the author's <strong>age</strong> and <strong>gender</strong>.
+                We'll compare your accuracy to language models ranging from 14M to 14B parameters.
+            </p>
+            <p style="font-size: 0.85rem; color: #666;">
+                Based on the Blog Authorship Corpus. Age bins: 13-17, 23-27, 33-47.
+            </p>
+            <button class="start-btn" onclick="startGame()">Start</button>
+        </div>
+
+        <!-- Game -->
+        <div id="game">
+            <div class="progress">
+                <span>Text <span class="count" id="current">1</span> / <span id="total">20</span></span>
+                <span>Age: <span id="age-score">0</span>/<span id="age-total">0</span> &nbsp;
+                      Gender: <span id="gender-score">0</span>/<span id="gender-total">0</span></span>
+            </div>
+
+            <div class="text-box" id="text-content"></div>
+
+            <div class="question">
+                <div class="question-label">What age group is this author?</div>
+                <div class="options" id="age-options">
+                    <button class="option-btn" data-task="age" data-value="1" onclick="select(this)">13-17</button>
+                    <button class="option-btn" data-task="age" data-value="2" onclick="select(this)">23-27</button>
+                    <button class="option-btn" data-task="age" data-value="3" onclick="select(this)">33-47</button>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-label">What is the author's gender?</div>
+                <div class="options" id="gender-options">
+                    <button class="option-btn" data-task="gender" data-value="female" onclick="select(this)">Female</button>
+                    <button class="option-btn" data-task="gender" data-value="male" onclick="select(this)">Male</button>
+                </div>
+            </div>
+
+            <div class="submit-row">
+                <button class="submit-btn" id="submit-btn" onclick="submitAnswer()" disabled>Submit</button>
+                <button class="next-btn" id="next-btn" onclick="nextText()" style="display:none">Next</button>
+            </div>
+
+            <div class="feedback" id="feedback"></div>
+        </div>
+
+        <!-- Results -->
+        <div id="results">
+            <h2>Your Results</h2>
+            <div class="result-grid">
+                <div class="result-card">
+                    <div class="label">Age Accuracy</div>
+                    <div class="value age" id="final-age">0%</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Gender Accuracy</div>
+                    <div class="value gender" id="final-gender">0%</div>
+                </div>
+            </div>
+
+            <div class="equivalent">
+                <div>Your age accuracy is equivalent to a</div>
+                <div class="size" id="equiv-size">—</div>
+                <div>parameter language model</div>
+            </div>
+
+            <div class="scaling-note">
+                Ridge probe accuracy scales as <em>acc = 0.083 &times; log<sub>10</sub>(params) + 0.69</em> across
+                22 models from 5 architecture families (R&sup2; = 0.97).
+                <br><br>
+                A bag-of-words baseline achieves 65% on age and 69% on gender using word frequencies alone.
+            </div>
+
+            <br>
+            <button class="start-btn" onclick="startGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+    let texts = [];
+    let order = [];
+    let idx = 0;
+    let ageChoice = null, genderChoice = null;
+    let ageCorrect = 0, ageTotal = 0, genderCorrect = 0, genderTotal = 0;
+    const N_ROUNDS = 20;
+
+    fetch('/assets/probe_texts.json')
+        .then(r => r.json())
+        .then(data => { texts = data; });
+
+    function startGame() {
+        // Shuffle and pick N_ROUNDS
+        order = [...Array(texts.length).keys()].sort(() => Math.random() - 0.5).slice(0, N_ROUNDS);
+        idx = 0;
+        ageCorrect = 0; ageTotal = 0; genderCorrect = 0; genderTotal = 0;
+        document.getElementById('intro').style.display = 'none';
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('game').style.display = 'block';
+        document.getElementById('total').textContent = N_ROUNDS;
+        showText();
+    }
+
+    function showText() {
+        const t = texts[order[idx]];
+        document.getElementById('text-content').textContent = t.text;
+        document.getElementById('current').textContent = idx + 1;
+        document.getElementById('age-score').textContent = ageCorrect;
+        document.getElementById('age-total').textContent = ageTotal;
+        document.getElementById('gender-score').textContent = genderCorrect;
+        document.getElementById('gender-total').textContent = genderTotal;
+
+        ageChoice = null; genderChoice = null;
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').style.display = '';
+        document.getElementById('next-btn').style.display = 'none';
+
+        document.querySelectorAll('.option-btn').forEach(b => {
+            b.classList.remove('selected', 'correct', 'wrong', 'was-correct');
+            b.disabled = false;
+        });
+
+        const fb = document.getElementById('feedback');
+        fb.classList.remove('show', 'correct', 'wrong');
+    }
+
+    function select(btn) {
+        const task = btn.dataset.task;
+        const parent = btn.parentElement;
+        parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+
+        if (task === 'age') ageChoice = btn.dataset.value;
+        if (task === 'gender') genderChoice = btn.dataset.value;
+
+        document.getElementById('submit-btn').disabled = !(ageChoice && genderChoice);
+    }
+
+    function submitAnswer() {
+        const t = texts[order[idx]];
+        const ageRight = parseInt(ageChoice) === t.age_bin;
+        const genderRight = genderChoice === t.gender;
+
+        ageTotal++; genderTotal++;
+        if (ageRight) ageCorrect++;
+        if (genderRight) genderCorrect++;
+
+        // Highlight buttons
+        document.querySelectorAll('#age-options .option-btn').forEach(b => {
+            b.disabled = true;
+            if (parseInt(b.dataset.value) === t.age_bin) {
+                b.classList.add(ageRight ? 'correct' : 'was-correct');
+            } else if (b.classList.contains('selected')) {
+                b.classList.add('wrong');
+            }
+        });
+        document.querySelectorAll('#gender-options .option-btn').forEach(b => {
+            b.disabled = true;
+            if (b.dataset.value === t.gender) {
+                b.classList.add(genderRight ? 'correct' : 'was-correct');
+            } else if (b.classList.contains('selected')) {
+                b.classList.add('wrong');
+            }
+        });
+
+        const both = ageRight && genderRight;
+        const fb = document.getElementById('feedback');
+        fb.className = 'feedback show ' + (both ? 'correct' : 'wrong');
+        let msg = both ? 'Both correct!' : '';
+        if (!both) {
+            const parts = [];
+            if (!ageRight) parts.push(`Age: ${t.age_label}`);
+            if (!genderRight) parts.push(`Gender: ${t.gender_label}`);
+            msg = parts.join(', ');
+        }
+        fb.textContent = msg;
+
+        document.getElementById('submit-btn').style.display = 'none';
+        document.getElementById('next-btn').style.display = '';
+        document.getElementById('age-score').textContent = ageCorrect;
+        document.getElementById('age-total').textContent = ageTotal;
+        document.getElementById('gender-score').textContent = genderCorrect;
+        document.getElementById('gender-total').textContent = genderTotal;
+    }
+
+    function nextText() {
+        idx++;
+        if (idx >= N_ROUNDS) {
+            showResults();
+        } else {
+            showText();
+        }
+    }
+
+    function showResults() {
+        document.getElementById('game').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+
+        const agePct = (ageCorrect / ageTotal * 100).toFixed(0);
+        const genderPct = (genderCorrect / genderTotal * 100).toFixed(0);
+        document.getElementById('final-age').textContent = agePct + '%';
+        document.getElementById('final-gender').textContent = genderPct + '%';
+
+        // Equivalent model size using scaling law: acc = 0.0828 * log10(B) + 0.69
+        // Solve for B: B = 10^((acc - 0.69) / 0.0828)
+        const ageAcc = ageCorrect / ageTotal;
+        const equivLogB = (ageAcc - 0.69) / 0.0828;
+        const equivB = Math.pow(10, equivLogB);
+
+        let sizeStr;
+        if (equivB < 0.001) sizeStr = '< 1M (below our smallest model!)';
+        else if (equivB < 1) sizeStr = (equivB * 1000).toFixed(0) + 'M';
+        else if (equivB < 1000) sizeStr = equivB.toFixed(1) + 'B';
+        else sizeStr = (equivB / 1000).toFixed(0) + 'T (superhuman!)';
+
+        document.getElementById('equiv-size').textContent = sizeStr;
+    }
+    </script>
+</body>
+</html>
