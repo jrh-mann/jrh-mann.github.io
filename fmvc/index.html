@@ -30,8 +30,6 @@
   <!-- Hero: Full-width video with large red circle overlay from left -->
   <section class="hero-home">
     <div class="hero-video-bg" id="hero-video-bg">
-      <!-- Gallery image as fallback / while embed loads -->
-      <img src="https://img.youtube.com/vi/KWWT1lTIBMA/maxresdefault.jpg" alt="" class="hero-bg-media" id="hero-poster">
       <div id="yt-player"></div>
     </div>
     <div class="hero-circle-overlay">
@@ -228,10 +226,8 @@
           },
           onStateChange: function(e) {
             if (e.data === YT.PlayerState.PLAYING) {
-              var poster = document.getElementById('hero-poster');
-              if (poster) poster.style.opacity = '0';
-              // Loop back to start when reaching 1:24
-              var checkTime = setInterval(function() {
+              // Loop back to 1:07 when reaching 1:24
+              setInterval(function() {
                 if (e.target.getCurrentTime() >= heroEnd) {
                   e.target.seekTo(heroStart, true);
                 }
