@@ -1052,8 +1052,7 @@ main {
 
 .inline-photo img {
   width: 100%;
-  max-height: 400px;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -1064,8 +1063,7 @@ main {
 
 .news-photo img {
   width: 100%;
-  max-height: 350px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
