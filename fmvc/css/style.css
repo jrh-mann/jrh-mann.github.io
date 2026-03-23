@@ -1042,6 +1042,34 @@ main {
   margin-bottom: 0;
 }
 
+/* ========== Inline photos (break up text) ========== */
+.inline-photo {
+  margin: 2rem 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.inline-photo img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
+}
+
+.news-photo {
+  padding: 1.5rem 0 !important;
+  border-bottom: none !important;
+}
+
+.news-photo img {
+  width: 100%;
+  max-height: 350px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
 /* ========== Contact social links ========== */
 .contact-social-links {
   display: flex;
