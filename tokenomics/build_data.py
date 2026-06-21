@@ -516,7 +516,7 @@ try:
             "source": "Monthly revenue, TWSE/MOPS filings via FinMind (NT$~31/US$), 3-month average", "url": "https://mops.twse.com.tw",
             "history": t3}
         live["fab_construction"] = True
-        cache("fab_construction.csv", [{"date": d["date"], "usd_bn": d["value"]} for d in t12])
+        cache("fab_construction.csv", [{"date": d["date"], "usd_bn": d["value"]} for d in t3])
 except Exception as e:
     print("  WARN fab_construction:", e)
 
