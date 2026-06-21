@@ -78,11 +78,15 @@ hist = [{"date": d, "lo": v[0], "median": v[1], "hi": v[2]} for d, v in sorted(a
 anchor = hist[-1]["median"]; decay = linspace(3.3, 1.5, 6); p = 1; cen = []
 for i, r in enumerate(decay): p *= r; cen.append({"year": 2026 + i, "value": anchor * p})
 series["compute_stock"] = {"title": "Installed AI compute", "unit": "H100-equivalents", "yfmt": "si",
-    "blurb": "Total AI compute ever shipped, summed across all chip designers — the base trend everything rides on.",
+    "blurb": "Total AI compute ever shipped, summed across all chip designers.",
     "source": "Epoch AI — AI Chip Sales (CC-BY)", "url": "https://epoch.ai/data/ai-chip-sales",
     "history": hist, "projection": {"central": cen,
         "lo": [{"year": 2026 + i, "value": anchor * 1.5 ** (i + 1)} for i in range(6)],
-        "hi": [{"year": 2026 + i, "value": anchor * 3.3 ** (i + 1)} for i in range(6)]}}
+        "hi": [{"year": 2026 + i, "value": anchor * 3.3 ** (i + 1)} for i in range(6)],
+        "scenarios": [
+            {"key": "lo", "name": "Floor — 1.5×/yr", "color": "#9aa0a6", "note": "Compute growth decelerates hard to 1.5×/yr (a conservative floor)."},
+            {"key": "central", "name": "Central — 3.3×→1.5×/yr", "color": "#2b6c8f", "note": "Recent ~3.3×/yr decaying linearly to 1.5×/yr by 2031 (Epoch/brief style)."},
+            {"key": "hi", "name": "No slowdown — 3.3×/yr", "color": "#b2453a", "note": "Today's ~3.3×/yr pace simply continues — almost certainly hits power/packaging limits first."}]}}
 live["compute_stock"] = lS
 
 aggp = defaultdict(lambda: [0, 0, 0])
@@ -93,15 +97,22 @@ for r in sales:
         aggp[d][j] += num(r.get(f"Power in MW ({k})")) or 0
 ph = [{"date": d, "chip_gw": v[1] / 1e3, "facility_gw": v[1] * 2.5 / 1e3}
       for d, v in sorted(aggp.items()) if d <= "2025-12-31" and v[1] > 0]
-P0, EFF = ph[-1]["facility_gw"], 1.34; pc = []
+P0, EFF = ph[-1]["facility_gw"], 1.34; pc = []; pl = []; phh = []
 for i in range(6):
     dp = 1
     for r in decay[:i + 1]: dp *= r
     pc.append({"year": 2026 + i, "value": P0 * dp / EFF ** (i + 1)})
+    pl.append({"year": 2026 + i, "value": P0 * 1.5 ** (i + 1) / EFF ** (i + 1)})
+    phh.append({"year": 2026 + i, "value": P0 * 3.3 ** (i + 1) / EFF ** (i + 1)})
 series["fleet_power"] = {"title": "AI fleet power draw", "unit": "GW", "yfmt": "num",
     "blurb": "Total power of all AI silicon. 'Facility' adds the ~2.5x overhead (servers, networking, cooling).",
     "source": "Epoch AI — AI Chip Sales (CC-BY); facility = chip TDP x2.5", "url": "https://epoch.ai/data-insights/ai-datacenter-power",
-    "history": ph, "projection": {"central": pc},
+    "history": ph, "projection": {"central": pc, "lo": pl, "hi": phh,
+        "scenarios": [
+            {"key": "lo", "name": "Floor — install 1.5×/yr", "color": "#9aa0a6", "note": "Matches the 1.5×/yr install floor."},
+            {"key": "central", "name": "Central — install 3.3×→1.5×/yr", "color": "#b2453a", "note": "Matches the central install scenario."},
+            {"key": "hi", "name": "No slowdown — install 3.3×/yr", "color": "#7a3b9a", "note": "Matches uninterrupted 3.3×/yr install."}],
+        "note": "Power = installed compute ÷ chip energy-efficiency gains (~1.34×/yr). Each power scenario tracks the matching install scenario."},
     "refs": [{"label": "≈ NY State peak", "value": 31}, {"label": "Epoch >100 GW by 2030", "value": 100},
              {"label": "RAND 2030 (327 GW)", "value": 327, "year": 2030}, {"label": "All US generating capacity", "value": 1280}]}
 live["fleet_power"] = lS
@@ -154,7 +165,10 @@ ct = {lab: [{"year": cyr(r["Release date"]), "pflops": num(r[col]) / 1e15, "name
 series["compute_trends"] = {"title": "Compute per chip, by numeric precision", "unit": "PFLOPS per chip", "yfmt": "num",
     "blurb": "Per-chip performance (log) by precision. Each generation does more — and draws more.",
     "source": "Epoch AI — ML Hardware (CC-BY)", "url": "https://epoch.ai/data/machine-learning-hardware",
-    "precision": ct, "roadmap": []}
+    "precision": ct, "roadmap": [
+        {"name": "Rubin VR200", "year": 2026.5, "fp4": 35, "vendor": "NVIDIA"},
+        {"name": "Rubin Ultra VR300", "year": 2027.5, "fp4": 70, "vendor": "NVIDIA"},
+        {"name": "AMD MI400", "year": 2026.5, "fp4": 40, "vendor": "AMD"}]}
 live["compute_trends"] = lM
 
 # ============================================================ LIVE: FinMind monthly
@@ -334,7 +348,7 @@ try:
             pts.append({"x": q, "revenue": round(rev_d[dt] / 1e12, 1), "margin": round(op_d[dt] / rev_d[dt] * 100, 1)})
     if len(pts) < 4: raise ValueError("too few SK Hynix points")
     series["skhynix"] = {"title": "SK Hynix — the HBM leader", "unit": "KRW trn (rev) / % (margin)", "yfmt": "num",
-        "blurb": "World #1 HBM maker (~62% share, ~70% of Rubin HBM4). No numeric HBM line is disclosed, but the boom is unmistakable in revenue & margin.",
+        "blurb": "World #1 HBM maker (~62% share, ~70% of Rubin HBM4).",
         "source": "SK Hynix quarterly financials via Yahoo Finance (000660.KS)", "url": "https://finance.yahoo.com/quote/000660.KS",
         "points": pts}
     live["skhynix"] = True
