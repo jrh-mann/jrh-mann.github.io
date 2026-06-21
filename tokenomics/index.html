@@ -315,7 +315,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
    const lines=[{name:'US total generation',color:'#1d1c1a',w:3.2,vals:s.us_gen.map(d=>({t:T(d.date),y:d.value}))}];
    if(s.us_demand&&s.us_demand.length)lines.push({name:'US demand',color:'#3a7ca5',w:2,vals:s.us_demand.map(d=>({t:T(d.date),y:d.value}))});
    card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',big:true,ylabel:'TWh per year',lines,
-     r2lines:[{name:'AI as % of US grid',color:'#b2453a',w:2.8,vals:pctH},{name:'AI % (scenario)',color:'#b2453a',dashed:true,vals:pctP}],r2label:'AI as % of US generation'}),
+     r2lines:[{name:'Global AI power ÷ US grid',color:'#b2453a',w:2.8,vals:pctH},{name:'scenario',color:'#b2453a',dashed:true,vals:pctP}],r2label:'global AI power as % of US generation'}),
      ()=>downloadCSV('us_energy.csv',['date','us_twh','ai_pct_of_grid'],s.ai_hist.map(d=>[d.date,usAt(+d.date.slice(0,4)),(d.value/usAt(+d.date.slice(0,4))*100).toFixed(2)])),null,'big');}
   {const s=S.compute_by_source;const last=s.rows[s.rows.length-1].date;
    const yrn=ds=>{const d=new Date(ds);return d.getFullYear()+d.getMonth()/12;};

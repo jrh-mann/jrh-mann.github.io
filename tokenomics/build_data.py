@@ -471,7 +471,7 @@ try:
     aih = [{"date": d["date"][:4] + "-12-15", "value": round(d["facility_gw"] * mfac, 2)} for d in fp["history"] if d["date"][5:7] == "12"]
     aip = [{"date": str(d["year"]) + "-12-15", "value": round(d["value"] * mfac, 2)} for d in fp["projection"][sckey]]
     series["us_energy"] = {"title": "US electricity: generation, demand & AI", "unit": f"TWh / {per}", "yfmt": "num", "ylabel": f"TWh per {per} (log)",
-        "blurb": f"US electricity generation{' & demand' if usdem else ''} ({freq}) against AI datacentres' annualised draw. A sliver today — but on the central scaling path it chases the whole US grid within years.",
+        "blurb": f"US electricity generation & demand (EIA, 12-mo trailing). The red line is Epoch's <b>global</b> AI fleet power as a share of the US grid — a yardstick, NOT US-only consumption (only ~half of global AI compute sits in the US). AI power = chip TDP × 2.5 facility overhead × 8,760 h.",
         "source": src + "; AI = Epoch fleet power × hours", "url": "https://www.eia.gov/electricity/",
         "us_gen": usgen, "us_demand": usdem, "ai_hist": aih, "ai_proj": aip, "scenario": fp["projection"]["scenarios"][1]["name"], "freq": freq}
     live["us_energy"] = bool(EIA_KEY)
