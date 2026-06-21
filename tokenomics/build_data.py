@@ -13,7 +13,7 @@ Model assumptions (projection growth rates, x2.5 facility overhead, 1.34x/yr eff
 refreshes a bundled snapshot in static/ used only as an emergency fallback if a source
 is unreachable (so a build never fully breaks). Pure stdlib; run: python3 build_data.py
 """
-import csv, io, json, re, html, gzip, time, urllib.request, zipfile
+import csv, io, json, re, html, gzip, time, os, urllib.request, zipfile
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -446,22 +446,33 @@ except Exception as e:
         live["korea_memory"] = False
     except Exception: pass
 
-# ============================================================ LIVE: total US electricity generation (OWID) vs AI
+# ============================================================ LIVE: US electricity generation + demand vs AI (EIA via env key, OWID fallback)
+EIA_KEY = os.environ.get("EIA_KEY", "").strip()
+def eia(path, params):
+    q = "&".join(f"{k}={v}" for k, v in params)
+    return json.loads(_get(f"https://api.eia.gov/v2/{path}/data/?api_key={EIA_KEY}&{q}", 90))["response"]["data"]
 try:
-    oc = list(csv.DictReader(io.StringIO(_get("https://ourworldindata.org/grapher/electricity-generation.csv?country=~USA", 60))))
-    vcol = [c for c in oc[0] if c not in ("Entity", "Code", "Year")][0]
-    usgen = [{"year": int(r["Year"]), "value": round(num(r[vcol]), 1)} for r in oc if r.get("Code") == "USA" and num(r.get(vcol)) and int(r["Year"]) >= 1995]
-    fp = series["fleet_power"]
-    aih = [{"year": int(d["date"][:4]), "value": round(d["facility_gw"] * 8.76, 2)} for d in fp["history"] if d["date"][5:7] == "12"]
-    sckey = fp["projection"]["scenarios"][1]["key"]
-    aip = [{"year": d["year"], "value": round(d["value"] * 8.76, 1)} for d in fp["projection"][sckey]]
-    if usgen and aih:
-        series["us_energy"] = {"title": "Total US electricity generation vs AI", "unit": "TWh / year", "yfmt": "num",
-            "blurb": "US electricity generation (last ~30 yrs) against AI datacentres' annualised draw. A sliver today — but on the central scaling path it chases the entire US grid within years.",
-            "source": "Our World in Data (Ember/EIA) for US generation; AI = Epoch fleet power × 8,760 h", "url": "https://ourworldindata.org/electricity-mix",
-            "us_gen": usgen, "ai_hist": aih, "ai_proj": aip, "scenario": fp["projection"]["scenarios"][1]["name"]}
-        live["us_energy"] = True
-        cache("us_energy.csv", [{"year": d["year"], "us_twh": d["value"]} for d in usgen])
+    fp = series["fleet_power"]; sckey = fp["projection"]["scenarios"][1]["key"]
+    usgen, usdem, freq, src = [], [], "annual", "Our World in Data (Ember/EIA), annual"
+    if EIA_KEY:
+        g = eia("electricity/electric-power-operational-data", [("frequency", "monthly"), ("data[0]", "generation"), ("facets[location][]", "US"), ("facets[sectorid][]", "99"), ("facets[fueltypeid][]", "ALL"), ("start", "2008-01"), ("sort[0][column]", "period"), ("sort[0][direction]", "asc"), ("length", "5000")])
+        usgen = [{"date": r["period"] + "-15", "value": round(num(r["generation"]) / 1000, 2)} for r in g if num(r.get("generation"))]
+        dd = eia("electricity/retail-sales", [("frequency", "monthly"), ("data[0]", "sales"), ("facets[stateid][]", "US"), ("facets[sectorid][]", "ALL"), ("start", "2008-01"), ("sort[0][column]", "period"), ("sort[0][direction]", "asc"), ("length", "5000")])
+        usdem = [{"date": r["period"] + "-15", "value": round(num(r["sales"]) / 1000, 2)} for r in dd if num(r.get("sales"))]
+        if usgen: freq, src = "monthly", "EIA — electric-power-operational-data (generation) + retail-sales (demand), monthly"
+    if not usgen:
+        oc = list(csv.DictReader(io.StringIO(_get("https://ourworldindata.org/grapher/electricity-generation.csv?country=~USA", 60))))
+        vcol = [c for c in oc[0] if c not in ("Entity", "Code", "Year")][0]
+        usgen = [{"date": r["Year"] + "-12-31", "value": round(num(r[vcol]), 1)} for r in oc if r.get("Code") == "USA" and num(r.get(vcol)) and int(r["Year"]) >= 1995]
+    mfac = 0.730 if freq == "monthly" else 8.76; per = "month" if freq == "monthly" else "year"
+    aih = [{"date": d["date"][:4] + "-12-15", "value": round(d["facility_gw"] * mfac, 2)} for d in fp["history"] if d["date"][5:7] == "12"]
+    aip = [{"date": str(d["year"]) + "-12-15", "value": round(d["value"] * mfac, 2)} for d in fp["projection"][sckey]]
+    series["us_energy"] = {"title": "US electricity: generation, demand & AI", "unit": f"TWh / {per}", "yfmt": "num", "ylabel": f"TWh per {per} (log)",
+        "blurb": f"US electricity generation{' & demand' if usdem else ''} ({freq}) against AI datacentres' annualised draw. A sliver today — but on the central scaling path it chases the whole US grid within years.",
+        "source": src + "; AI = Epoch fleet power × hours", "url": "https://www.eia.gov/electricity/",
+        "us_gen": usgen, "us_demand": usdem, "ai_hist": aih, "ai_proj": aip, "scenario": fp["projection"]["scenarios"][1]["name"], "freq": freq}
+    live["us_energy"] = bool(EIA_KEY)
+    cache("us_energy.csv", [{"date": d["date"], "us_twh": d["value"]} for d in usgen])
 except Exception as e:
     print("  WARN us_energy:", e)
 

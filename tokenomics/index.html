@@ -144,7 +144,7 @@ function scenNote(scs,head){return `<div class="scen">${head?`<div class="scen-h
 
 // ===== builders =====
 function lineChart(ho,le,W,cfg){
-  const m={t:12,r:18,b:26,l:60},h=cfg.big?Math.max(430,Math.min(600,W*0.95)):Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:12,r:18,b:26,l:60},h=cfg.big?Math.max(480,Math.min(680,W*1.05)):Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
   const all=[].concat(...cfg.lines.map(l=>l.vals));
   const x=d3.scaleTime().domain(d3.extent(all,d=>d.t)).range([0,iw]);
   let ymax=d3.max(all,d=>d.y),ymin=Math.min(0,d3.min(all,d=>d.y));
@@ -185,11 +185,11 @@ function barChart(ho,le,W,cfg){
   g.selectAll('text.bl').data(cfg.bars).join('text').attr('class','bl').attr('x',d=>x(d.x)+x.bandwidth()/2).attr('y',d=>y(d.value)-5).attr('text-anchor','middle').attr('font-size',9.5).attr('fill','#54504a').text(d=>fmt(d.value,cfg.yfmt));
 }
 function stackChart(ho,le,W,cfg){
-  const m={t:12,r:16,b:28,l:54},h=cfg.big?Math.max(340,Math.min(440,W*0.42)):320,{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:18,r:16,b:28,l:54},h=cfg.big?Math.max(390,Math.min(560,W*0.5)):320,{g,iw,ih}=svgBase(ho,W,h,m);
   const data=cfg.rows.map(r=>({t:T(r.date),...r}));
   const x=d3.scaleTime().domain(d3.extent(data,d=>d.t)).range([0,iw]);
   const stk=d3.stack().keys(cfg.keys)(data);
-  const y=d3.scaleLinear().domain([0,d3.max(stk[stk.length-1],d=>d[1])*1.12]).range([ih,0]);
+  const y=d3.scaleLinear().domain([0,d3.max(stk[stk.length-1],d=>d[1])*1.2]).range([ih,0]);
   gridY(g,y,iw);g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6));
   g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(yAxisFmt(cfg.yfmt)));ylab(g,m,ih,cfg.ylabel);
   const area=d3.area().x(d=>x(d.data.t)).y0(d=>y(d[0])).y1(d=>y(d[1])).curve(d3.curveLinear);
@@ -287,11 +287,12 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   {const s=S.fleet_power;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,yloMul:0.07,ylabel:'GW, facility (log)',refs:s.refs,lines:projLines(s,'facility_gw','Facility power','#1d1c1a')}),
      ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note),'big');}
   if(S.us_energy){const s=S.us_energy;const lastA=s.ai_hist[s.ai_hist.length-1];
-   const usl={name:'US total generation',color:'#1d1c1a',w:3.2,vals:s.us_gen.map(d=>({t:new Date(d.year,11,31),y:d.value}))};
-   const ail={name:'AI datacentres',color:'#b2453a',w:2.8,vals:s.ai_hist.map(d=>({t:new Date(d.year,11,31),y:d.value}))};
-   const aip={name:'AI ('+s.scenario+')',color:'#b2453a',dashed:true,dots:false,cls:'aip',vals:[lastA].concat(s.ai_proj).map(d=>({t:new Date(d.year,11,31),y:d.value}))};
-   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,ylabel:'TWh per year (log)',lines:[usl,ail,aip]}),
-     ()=>downloadCSV('us_energy.csv',['year','us_twh'],s.us_gen.map(d=>[d.year,d.value])),null,'big');}
+   const lines=[{name:'US total generation',color:'#1d1c1a',w:3.2,vals:s.us_gen.map(d=>({t:T(d.date),y:d.value}))}];
+   if(s.us_demand&&s.us_demand.length)lines.push({name:'US demand (retail sales)',color:'#3a7ca5',w:2,vals:s.us_demand.map(d=>({t:T(d.date),y:d.value}))});
+   lines.push({name:'AI datacentres',color:'#b2453a',w:2.8,vals:s.ai_hist.map(d=>({t:T(d.date),y:d.value}))});
+   lines.push({name:'AI ('+s.scenario+')',color:'#b2453a',dashed:true,dots:false,cls:'aip',vals:[lastA].concat(s.ai_proj).map(d=>({t:T(d.date),y:d.value}))});
+   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,ylabel:s.ylabel||'TWh (log)',lines}),
+     ()=>downloadCSV('us_energy.csv',['date','us_twh'],s.us_gen.map(d=>[d.date,d.value])),null,'big');}
   {const s=S.compute_by_source;const last=s.rows[s.rows.length-1].date;
    const yrn=ds=>{const d=new Date(ds);return d.getFullYear()+d.getMonth()/12;};
    const fdates=[];for(let y=2026;y<=2027;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
