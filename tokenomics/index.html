@@ -126,6 +126,7 @@ function yAxisFmt(k){if(k==='pct')return d=>d+'%';if(k==='usd')return d=>'$'+pla
  if(k==='si')return d=>{const a=Math.abs(d);return a>=1e9?d/1e9+'B':a>=1e6?d/1e6+'M':a>=1e3?d/1e3+'k':d;};return plainNum;}
 const pDMY=d3.timeParse('%Y-%m-%d'),pYM=d3.timeParse('%Y-%m');
 function T(s){if(typeof s==='number')return new Date(s,11,31);if(/^\d{4}-\d{2}-\d{2}$/.test(s))return pDMY(s);if(/^\d{4}-\d{2}$/.test(s))return pYM(s);if(/^\d{4}$/.test(s))return new Date(+s,11,31);return pDMY(s)||pYM(s);}
+function ym2q(ym){const a=(''+ym).split('-');return a[0]+'-Q'+(Math.floor(((+a[1]||1)-1)/3)+1);}
 function downloadCSV(name,header,rows){const csv=[header.join(',')].concat(rows.map(r=>r.join(','))).join('\n');const b=new Blob([csv],{type:'text/csv'}),u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 function decades(y){const d=y.domain(),lo=Math.floor(Math.log10(d[0])),hi=Math.ceil(Math.log10(d[1])),tv=[];for(let k=lo;k<=hi;k++){const v=Math.pow(10,k);if(v>=d[0]*0.999&&v<=d[1]*1.001)tv.push(v);}return tv;}
 function gridY(g,y,iw,tv){const a=d3.axisLeft(y).tickSize(-iw).tickFormat('');tv?a.tickValues(tv):a.ticks(5);g.append('g').attr('class','grid-g').call(a).select('.domain').remove();}
@@ -188,12 +189,12 @@ function stackChart(ho,le,W,cfg){
   const data=cfg.rows.map(r=>({t:T(r.date),...r}));
   const x=d3.scaleTime().domain(d3.extent(data,d=>d.t)).range([0,iw]);
   const stk=d3.stack().keys(cfg.keys)(data);
-  const y=d3.scaleLinear().domain([0,d3.max(stk[stk.length-1],d=>d[1])*1.06]).range([ih,0]);
+  const y=d3.scaleLinear().domain([0,d3.max(stk[stk.length-1],d=>d[1])*1.12]).range([ih,0]);
   gridY(g,y,iw);g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6));
   g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(yAxisFmt(cfg.yfmt)));ylab(g,m,ih,cfg.ylabel);
   const area=d3.area().x(d=>x(d.data.t)).y0(d=>y(d[0])).y1(d=>y(d[1])).curve(d3.curveLinear);
   g.selectAll('path.l').data(stk).join('path').attr('class','l').attr('d',area).attr('fill',d=>PAL[d.key]||'#999').attr('opacity',.9);
-  if(cfg.splitDate){const xs=x(T(cfg.splitDate));g.append('rect').attr('x',xs).attr('y',0).attr('width',Math.max(0,iw-xs)).attr('height',ih).attr('fill','#faf8f3').attr('opacity',.34);
+  if(cfg.splitDate){const xs=x(T(cfg.splitDate));g.append('rect').attr('x',xs).attr('y',0).attr('width',Math.max(0,iw-xs)).attr('height',ih).attr('fill','#faf8f3').attr('opacity',.12);
     g.append('line').attr('x1',xs).attr('x2',xs).attr('y1',0).attr('y2',ih).attr('stroke','#1d1c1a').attr('stroke-dasharray','4 3').attr('opacity',.55);
     g.append('text').attr('x',xs+5).attr('y',ih-6).attr('font-size',10.5).attr('fill','#666').attr('font-style','italic').text('forecast →');}
   if(cfg.bands)cfg.bands.forEach(b=>{const x0=Math.max(0,x(T(b[1])));if(x0<0||x0>iw)return;
@@ -341,8 +342,8 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   // 4 — memory
   let g4=section('s4','04 · memory','HBM — the memory bottleneck','No one discloses a clean HBM revenue number, so we triangulate: Micron’s data-centre segment (best primary numeric proxy) and the boom at the market leader, SK Hynix.');
   {const s=S.micron_cmbu;const hasM=s.points.some(p=>p.margin!=null);
-   card(g4,s,(ho,le,W)=>hasM?comboChart(ho,le,W,{bars:s.points.map(p=>({x:p.date,value:p.value})),line:s.points.filter(p=>p.margin!=null).map(p=>({x:p.date,value:p.margin})),barUnit:'US$ bn',ylabel:'US$ billions',barColor:'#7a3b9a',lineColor:'#1f4e6b',big:true})
-      :barChart(ho,le,W,{bars:s.points.map(p=>({x:p.date,value:p.value})),color:'#7a3b9a',yfmt:'usd',ylabel:'US$ bn / quarter',big:true}),
+   card(g4,s,(ho,le,W)=>hasM?comboChart(ho,le,W,{bars:s.points.map(p=>({x:ym2q(p.date),value:p.value})),line:s.points.filter(p=>p.margin!=null).map(p=>({x:ym2q(p.date),value:p.margin})),barUnit:'US$ bn',ylabel:'US$ billions',barColor:'#7a3b9a',lineColor:'#1f4e6b',big:true})
+      :barChart(ho,le,W,{bars:s.points.map(p=>({x:ym2q(p.date),value:p.value})),color:'#7a3b9a',yfmt:'usd',ylabel:'US$ bn / quarter',big:true}),
      ()=>downloadCSV('micron_cmbu.csv',['quarter','usd_bn','op_margin_pct'],s.points.map(p=>[p.date,p.value,p.margin!=null?p.margin:''])),null,'full');}
   {const s=S.skhynix;card(g4,s,(ho,le,W)=>comboChart(ho,le,W,{bars:s.points.map(p=>({x:p.x,value:p.revenue})),line:s.points.map(p=>({x:p.x,value:p.margin})),barUnit:'US$ bn',ylabel:'US$ billions',barColor:'#d3873f',lineColor:'#1f4e6b'}),
      ()=>downloadCSV('skhynix.csv',['quarter','revenue_krw_trn','op_margin_pct'],s.points.map(p=>[p.x,p.revenue,p.margin])));}
@@ -389,8 +390,8 @@ fetch('data.json').then(r=>r.json()).then(D=>{
       kw.appendChild(d);d.querySelector('input').addEventListener('input',renderB);});
     function kn(id){return +document.getElementById('kn_'+id).value;}
     function metricsAt(g,eff,layers,yr){const dt=yr-B.anchor_year;const stock=B.anchor_h100e*Math.pow(g,dt);
-      const annual=stock-B.anchor_h100e*Math.pow(g,dt-1);
-      const logicW=annual/B.h100e_per_logic_wafer,cowosW=annual/B.h100e_per_cowos_wafer;
+      const annual=stock-B.anchor_h100e*Math.pow(g,dt-1);const dens=Math.pow(eff,dt);
+      const logicW=annual/(B.h100e_per_logic_wafer*dens),cowosW=annual/(B.h100e_per_cowos_wafer*dens);
       const euvTools=logicW*layers/(B.defaults.euv_wph*B.defaults.euv_util*8760);
       const powerGW=stock*(B.w_per_h100e/Math.pow(eff,dt))/1e9;
       return {stock,annual,logicW,cowosW,euvTools,powerGW};}
