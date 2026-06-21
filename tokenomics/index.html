@@ -286,6 +286,12 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('compute_stock.csv',['date','median','lo','hi'],s.history.map(d=>[d.date,d.median,d.lo,d.hi])),scenNote(s.projection.scenarios,'Install scenarios (from end-2025):'),'big');}
   {const s=S.fleet_power;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,yloMul:0.07,ylabel:'GW, facility (log)',refs:s.refs,lines:projLines(s,'facility_gw','Facility power','#1d1c1a')}),
      ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note),'big');}
+  if(S.us_energy){const s=S.us_energy;const lastA=s.ai_hist[s.ai_hist.length-1];
+   const usl={name:'US total generation',color:'#1d1c1a',w:3.2,vals:s.us_gen.map(d=>({t:new Date(d.year,11,31),y:d.value}))};
+   const ail={name:'AI datacentres',color:'#b2453a',w:2.8,vals:s.ai_hist.map(d=>({t:new Date(d.year,11,31),y:d.value}))};
+   const aip={name:'AI ('+s.scenario+')',color:'#b2453a',dashed:true,dots:false,cls:'aip',vals:[lastA].concat(s.ai_proj).map(d=>({t:new Date(d.year,11,31),y:d.value}))};
+   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,ylabel:'TWh per year (log)',lines:[usl,ail,aip]}),
+     ()=>downloadCSV('us_energy.csv',['year','us_twh'],s.us_gen.map(d=>[d.year,d.value])),null,'big');}
   {const s=S.compute_by_source;const last=s.rows[s.rows.length-1].date;
    const yrn=ds=>{const d=new Date(ds);return d.getFullYear()+d.getMonth()/12;};
    const fdates=[];for(let y=2026;y<=2027;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);

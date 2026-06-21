@@ -446,6 +446,25 @@ except Exception as e:
         live["korea_memory"] = False
     except Exception: pass
 
+# ============================================================ LIVE: total US electricity generation (OWID) vs AI
+try:
+    oc = list(csv.DictReader(io.StringIO(_get("https://ourworldindata.org/grapher/electricity-generation.csv?country=~USA", 60))))
+    vcol = [c for c in oc[0] if c not in ("Entity", "Code", "Year")][0]
+    usgen = [{"year": int(r["Year"]), "value": round(num(r[vcol]), 1)} for r in oc if r.get("Code") == "USA" and num(r.get(vcol)) and int(r["Year"]) >= 1995]
+    fp = series["fleet_power"]
+    aih = [{"year": int(d["date"][:4]), "value": round(d["facility_gw"] * 8.76, 2)} for d in fp["history"] if d["date"][5:7] == "12"]
+    sckey = fp["projection"]["scenarios"][1]["key"]
+    aip = [{"year": d["year"], "value": round(d["value"] * 8.76, 1)} for d in fp["projection"][sckey]]
+    if usgen and aih:
+        series["us_energy"] = {"title": "Total US electricity generation vs AI", "unit": "TWh / year", "yfmt": "num",
+            "blurb": "US electricity generation (last ~30 yrs) against AI datacentres' annualised draw. A sliver today — but on the central scaling path it chases the entire US grid within years.",
+            "source": "Our World in Data (Ember/EIA) for US generation; AI = Epoch fleet power × 8,760 h", "url": "https://ourworldindata.org/electricity-mix",
+            "us_gen": usgen, "ai_hist": aih, "ai_proj": aip, "scenario": fp["projection"]["scenarios"][1]["name"]}
+        live["us_energy"] = True
+        cache("us_energy.csv", [{"year": d["year"], "us_twh": d["value"]} for d in usgen])
+except Exception as e:
+    print("  WARN us_energy:", e)
+
 # ============================================================ buildout model constants (Epoch-derived)
 try:
     anchor_h = hist[-1]["median"]                       # end-2025 installed H100e
