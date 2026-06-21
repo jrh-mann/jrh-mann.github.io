@@ -417,6 +417,42 @@ except Exception as e:
         "points": [{"x": x["quarter"], "revenue": num(x["revenue_krw_t"]), "margin": num(x["op_margin_pct"])} for x in r]}
     live["skhynix"] = False
 
+# ============================================================ buildout model constants (Epoch-derived)
+try:
+    anchor_h = hist[-1]["median"]                       # end-2025 installed H100e
+    P0gw = ph[-1]["facility_gw"]
+    cum_logic = sum(num(r.get("Logic wafers (median)")) or 0 for r in comp if r.get("Designer") != "Other")
+    cum_cowos = sum(num(r.get("CoWoS wafers (median)")) or 0 for r in comp if r.get("Designer") != "Other")
+    sd, _ = epoch_zip("supply_denominators.csv", "components_supply_denominators.csv")
+    sd = [r for r in sd if r.get("Logic supply (median)")]
+    logic_sup_q = num(sd[-1]["Logic supply (median)"]); cowos_sup_q = num(sd[-1]["CoWoS supply (median)"])
+    # $/MW from Epoch Frontier Data Centers
+    dpm = None
+    try:
+        dc = zipfile.ZipFile(io.BytesIO(_get(f"{EP}/data_centers/data_centers.zip", binary=True)))
+        nm = next(n for n in dc.namelist() if n.endswith("data_centers.csv"))
+        dcr = list(csv.DictReader(io.StringIO(dc.read(nm).decode("utf-8", "ignore"))))
+        ratios = []
+        for r in dcr:
+            mw = num(r.get("Current power (MW)")); cap = num(r.get("Current total capital cost (2025 USD billions)"))
+            if mw and cap and mw > 0: ratios.append(cap * 1e3 / mw)
+        ratios.sort(); dpm = round(ratios[len(ratios)//2], 1) if ratios else None
+    except Exception as e:
+        print("  WARN data_centers $/MW:", e)
+    series["buildout"] = {"title": "The buildout — what the compute trend requires", "yfmt": "num",
+        "blurb": "Drive AI compute forward and see the physical requirements it implies — wafers, packaging, EUV machines, power, dollars — vs what's actually available. Twizzle the knobs.",
+        "source": "Epoch AI (Chip Sales, Components, Frontier Data Centers; CC-BY) + ASML (EUV)", "url": "https://epoch.ai/data",
+        "anchor_h100e": anchor_h, "anchor_year": 2025,
+        "h100e_per_logic_wafer": round(anchor_h / cum_logic, 1) if cum_logic else 230,
+        "h100e_per_cowos_wafer": round(anchor_h / cum_cowos, 1) if cum_cowos else 25,
+        "logic_supply_annual": round(logic_sup_q * 4), "cowos_supply_annual": round(cowos_sup_q * 4),
+        "euv_per_year": series["euv_units"]["bars"][-1]["value"],
+        "dollars_per_mw": dpm or 38, "w_per_h100e": round(P0gw * 1e9 / anchor_h),
+        "defaults": {"growth": 2.25, "efficiency": 1.34, "euv_layers": 25, "euv_wph": 220, "euv_util": 0.85, "facility_overhead": 2.5}}
+    live["buildout"] = True
+except Exception as e:
+    print("  WARN buildout:", e)
+
 # ============================================================ write
 for k, v in series.items(): v["fresh"] = "live" if live.get(k) else "filing"
 out = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),

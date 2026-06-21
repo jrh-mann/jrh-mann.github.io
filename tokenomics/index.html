@@ -71,6 +71,19 @@ h2{font-size:clamp(24px,3.6vw,34px);margin-bottom:10px}
 footer{padding:50px 0 70px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:40px}
 footer a{color:var(--c-blue);text-decoration:none}
 .note{background:#f4f0e7;border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:13.5px;color:#54504a;margin-top:16px}
+.knobs{display:flex;flex-wrap:wrap;gap:16px 22px;margin:6px 0 18px}
+.knob{font-size:12.5px;color:#46423b;display:flex;flex-direction:column;gap:2px}
+.knob input[type=range]{width:180px;accent-color:var(--c-blue)}
+.knob .kv{font-family:'Fraunces',serif;color:var(--c-blue);font-weight:600}
+.gauges{display:flex;flex-direction:column;gap:14px}
+.gauge .glab{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;margin-bottom:4px;gap:10px}
+.gauge .glab .gname{font-weight:600}
+.gauge .glab .gnum{color:var(--muted);font-size:12.5px}
+.gauge .gbar{height:16px;background:#efe9dd;border-radius:8px;position:relative;overflow:visible}
+.gauge .gfill{height:100%;border-radius:8px;transition:width .12s,background .12s}
+.gauge .gmark{position:absolute;top:-4px;bottom:-4px;width:2px;background:#1d1c1a}
+.gauge .gmarklab{position:absolute;top:18px;font-size:10px;color:#1d1c1a;transform:translateX(-50%)}
+.gauge .grat{font-family:'Fraunces',serif;font-weight:600}
 </style>
 </head>
 <body>
@@ -105,7 +118,7 @@ const PAL={'CoWoS packaging':'#b2453a','HBM memory':'#7a3b9a','Advanced logic wa
  Ampere:'#a7a097',Hopper:'#2b6c8f',Blackwell:'#4e9a51',Rubin:'#7a3b9a',
  Wiwynn:'#b2453a',Quanta:'#d3873f',Wistron:'#2b6c8f','FP16/BF16':'#2b6c8f','FP8':'#4e9a51','FP4':'#b2453a',
  NVIDIA:'#76b900',Google:'#4285f4',AMD:'#ed1c24',Amazon:'#ff9900',Huawei:'#8a6d3b',Cambricon:'#9467bd',Other:'#c9c2b6'};
-const ERAS=[['Ampere','2021-06-01','2023-04-01','#8a8378'],['Hopper','2023-04-01','2024-10-01','#2b6c8f'],['Blackwell','2024-10-01','2026-07-01','#d3873f'],['Rubin (expected)','2026-07-01','2027-12-01','#7a3b9a']];
+const ERAS=[['Ampere','2021-06-01','2023-04-01','#a7a097'],['Hopper','2023-04-01','2024-10-01','#2b6c8f'],['Blackwell','2024-10-01','2026-07-01','#4e9a51'],['Rubin (expected)','2026-07-01','2027-12-01','#7a3b9a']];
 function plainNum(d){if(d===0)return'0';const a=Math.abs(d);return a<1?(+d.toFixed(2))+'':a<1000?(+d.toFixed(a<10?1:0))+'':(+(d/1000).toFixed(1))+'k';}
 function fmt(v,k){if(v==null||isNaN(v))return'–';if(k==='pct')return d3.format('.0f')(v)+'%';if(k==='usd')return '$'+plainNum(v)+'B';
  if(k==='si'){const a=Math.abs(v);return a>=1e9?d3.format('.1f')(v/1e9)+'B':a>=1e6?d3.format('.1f')(v/1e6)+'M':a>=1e3?d3.format('.0f')(v/1e3)+'k':d3.format('.0f')(v);}return plainNum(v);}
@@ -143,7 +156,7 @@ function lineChart(ho,le,W,cfg){
   g.append('g').attr('class','axis').call(yax);ylab(g,m,ih,cfg.ylabel);
   if(cfg.bands)cfg.bands.forEach(b=>{const x0=Math.max(0,x(T(b[1]))),x1=Math.min(iw,x(T(b[2])));if(x1<=x0)return;
     g.append('rect').attr('x',x0).attr('y',0).attr('width',x1-x0).attr('height',ih).attr('fill',b[3]).attr('opacity',0.10);
-    g.append('text').attr('x',x0+5).attr('y',12).attr('text-anchor','start').attr('fill',b[3]).attr('font-size',9.5).attr('font-weight',600).attr('opacity',0.85).text(b[0]);});
+    g.append('text').attr('x',x0+5).attr('y',13).attr('text-anchor','start').attr('fill',b[3]).attr('font-size',12.5).attr('font-weight',600).attr('opacity',0.92).text(b[0]);});
   if(cfg.refs)cfg.refs.filter(r=>!r.year).forEach(r=>{g.append('line').attr('x1',0).attr('x2',iw).attr('y1',y(r.value)).attr('y2',y(r.value)).attr('stroke','#c9b89f').attr('stroke-dasharray','5 3').attr('stroke-width',1);
     g.append('text').attr('x',4).attr('y',y(r.value)-4).attr('text-anchor','start').attr('fill','#a8895f').attr('font-size',9.5).text(r.label);});
   if(cfg.refs)cfg.refs.filter(r=>r.year).forEach(r=>{const px=x(new Date(r.year,11,31));g.append('circle').attr('cx',px).attr('cy',y(r.value)).attr('r',5).attr('fill','#7a3b9a').attr('stroke','#fff');
@@ -182,7 +195,7 @@ function stackChart(ho,le,W,cfg){
   g.selectAll('path.l').data(stk).join('path').attr('class','l').attr('d',area).attr('fill',d=>PAL[d.key]||'#999').attr('opacity',.9);
   if(cfg.bands)cfg.bands.forEach(b=>{const x0=Math.max(0,x(T(b[1])));if(x0<0||x0>iw)return;
     g.append('line').attr('x1',x0).attr('x2',x0).attr('y1',0).attr('y2',ih).attr('stroke',b[3]).attr('stroke-dasharray','3 3').attr('opacity',.5);
-    g.append('text').attr('x',x0+4).attr('y',11).attr('fill',b[3]).attr('font-size',9.5).attr('font-weight',600).attr('opacity',.9).text(b[0]);});
+    g.append('text').attr('x',x0+4).attr('y',13).attr('fill',b[3]).attr('font-size',12.5).attr('font-weight',600).attr('opacity',.92).text(b[0]);});
   cfg.keys.forEach(k=>legendItem(le,PAL[k]||'#999',k));
   const focus=g.append('line').attr('y1',0).attr('y2',ih).attr('stroke','#bdb4a6').attr('opacity',0);
   g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
@@ -253,7 +266,9 @@ fetch('data.json').then(r=>r.json()).then(D=>{
     ['Datacenter','Power',fmt(S.fleet_power.history.at(-1).facility_gw,'num')+' GW','#s1']];
   const flow=document.getElementById('flow');
   fd.forEach((n,i)=>{const el=document.createElement('div');el.className='node';el.innerHTML=`<div class="nlab">${n[0]}</div><div class="nsub">${n[1]}</div><div class="nstat">${n[2]}</div>${i<fd.length-1?'<div class="narrow">→</div>':''}`;el.onclick=()=>document.querySelector(n[3]).scrollIntoView({behavior:'smooth',block:'start'});flow.appendChild(el);});
-  const cd=[['EUV lithography','One maker (ASML) → one optics supplier (Zeiss). ~'+S.euv_units.bars.at(-1).value+' machines/yr.','#s3'],['Power & grid','Facility power scaling toward national-grid fractions.','#s1']];
+  const cd=[['EUV lithography','One maker — ASML — produces ~'+S.euv_units.bars.at(-1).value+' machines/yr. Every leading-edge chip needs them.','#s3'],
+    ['Zeiss optics','ASML’s sole optics supplier: picometre-flat EUV mirrors from one site (Oberkochen, DE). ~25% ASML-owned. The monopoly beneath the monopoly.','#s3'],
+    ['Power & grid','Facility power scaling toward national-grid fractions.','#s1']];
   const cc=document.getElementById('constraints');cd.forEach(n=>{const el=document.createElement('div');el.className='cnode';el.innerHTML=`<div class="nlab">⛓ ${n[0]}</div><div class="nsub">${n[1]}</div>`;el.onclick=()=>document.querySelector(n[2]).scrollIntoView({behavior:'smooth',block:'start'});cc.appendChild(el);});
   const main=document.getElementById('sections');
   function section(id,k,t,intro){const s=document.createElement('section');s.id=id;s.innerHTML=`<div class="sec-h">${k}</div><h2>${t}</h2><p class="sec-intro">${intro}</p>`;const grid=document.createElement('div');grid.className='grid';s.appendChild(grid);main.appendChild(s);return grid;}
@@ -321,6 +336,49 @@ fetch('data.json').then(r=>r.json()).then(D=>{
    card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',bands:ERAS,lines}),
      ()=>{const names=Object.keys(s.lines),base=s.lines[names[0]];downloadCSV('odm_revenue.csv',['month',...names],base.map((d,i)=>[d.date,...names.map(n=>s.lines[n][i]?.value)]));});}
 
+  // 7 — interactive buildout model
+  if(S.buildout){const B=S.buildout;
+    const sec=document.createElement('section');sec.id='s7';
+    sec.innerHTML=`<div class="sec-h">07 · the buildout</div><h2>${B.title}</h2><p class="sec-intro">${B.blurb}</p>`;
+    const c=document.createElement('div');c.className='chart-card';
+    c.innerHTML=`<div class="knobs" id="bknobs"></div><div class="gauges" id="bgauges"></div>
+      <div class="chart-foot"><span>Source: ${B.source} · <b style="color:var(--c-green)">● live</b></span><span><a href="${B.url}" target="_blank" rel="noopener">source ↗</a></span></div>`;
+    sec.appendChild(c);main.appendChild(sec);
+    const knobs=[
+      {id:'growth',label:'Compute growth',min:1.3,max:3.5,step:0.05,val:B.defaults.growth,fmt:v=>v.toFixed(2)+'×/yr'},
+      {id:'year',label:'Target year',min:2026,max:2030,step:1,val:2030,fmt:v=>''+v},
+      {id:'eff',label:'Efficiency gain',min:1.0,max:1.6,step:0.02,val:B.defaults.efficiency,fmt:v=>v.toFixed(2)+'×/yr'},
+      {id:'layers',label:'EUV layers/wafer',min:12,max:36,step:1,val:B.defaults.euv_layers,fmt:v=>''+v},
+      {id:'dpm',label:'$ per MW',min:20,max:60,step:1,val:B.dollars_per_mw,fmt:v=>'$'+v+'M'}];
+    const kw=document.getElementById('bknobs');
+    knobs.forEach(k=>{const d=document.createElement('label');d.className='knob';
+      d.innerHTML=`${k.label}: <span class="kv" id="kv_${k.id}"></span><input type="range" id="kn_${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${k.val}">`;
+      kw.appendChild(d);d.querySelector('input').addEventListener('input',renderB);});
+    function kn(id){return +document.getElementById('kn_'+id).value;}
+    function renderB(){
+      const g=kn('growth'),Y=kn('year'),eff=kn('eff'),layers=kn('layers'),dpm=kn('dpm'),dt=Y-B.anchor_year;
+      knobs.forEach(k=>document.getElementById('kv_'+k.id).textContent=k.fmt(kn(k.id)));
+      const stockY=B.anchor_h100e*Math.pow(g,dt),annual=stockY-B.anchor_h100e*Math.pow(g,dt-1);
+      const logicW=annual/B.h100e_per_logic_wafer,cowosW=annual/B.h100e_per_cowos_wafer;
+      const euvTools=logicW*layers/(B.defaults.euv_wph*B.defaults.euv_util*8760);
+      const powerGW=stockY*(B.w_per_h100e/Math.pow(eff,dt))/1e9, capexB=powerGW*dpm;
+      const rows=[['Leading-edge wafers / yr',logicW,B.logic_supply_annual,'wafers'],
+        ['CoWoS wafers / yr',cowosW,B.cowos_supply_annual,'wafers'],
+        ['EUV machines needed',euvTools,B.euv_per_year,'tools/yr'],
+        ['Datacentre power',powerGW,1280,'GW'],
+        ['Datacentre capex',capexB,null,'$B']];
+      const gw=document.getElementById('bgauges');gw.innerHTML='';
+      rows.forEach(([name,need,avail,unit])=>{const ratio=avail?need/avail:null,over=avail&&need>avail;
+        const pct=avail?Math.min(100,need/avail*40):40;const isU=unit==='$B';
+        const needS=isU?fmt(need,'usd'):fmt(need,'num')+' '+unit;
+        const availS=avail?` · available ${fmt(avail,'num')} ${unit}`:'';
+        const ratS=ratio?`<span class="grat" style="color:${over?'#b2453a':'#4e9a51'}">${ratio>=1?ratio.toFixed(1)+'× over supply':(ratio*100).toFixed(0)+'% of supply'}</span>`:'';
+        const el=document.createElement('div');el.className='gauge';
+        el.innerHTML=`<div class="glab"><span class="gname">${name}: ${needS}</span><span class="gnum">${availS} ${ratS}</span></div>
+          <div class="gbar"><div class="gfill" style="width:${pct}%;background:${over?'#b2453a':'#4e9a51'}"></div>${avail?'<div class="gmark" style="left:40%"></div>':''}</div>`;
+        gw.appendChild(el);});}
+    renderB();
+  }
 }).catch(e=>{document.getElementById('sections').innerHTML='<p style="color:#b2453a;padding:40px 0">Could not load data.json — '+e+'</p>';console.error(e);});
 </script>
 </body>
