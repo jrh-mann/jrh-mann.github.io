@@ -189,14 +189,19 @@ function lineChart(ho,le,W,cfg){
      tip(`<b>${hd}</b>${rows}`,e);}).on('mouseleave',()=>{untip();focus.attr('opacity',0);dots.forEach(c=>c.attr('opacity',0));r2dots.forEach(c=>c.attr('opacity',0));});
 }
 function barChart(ho,le,W,cfg){
-  const m={t:12,r:16,b:34,l:54},h=cfg.big?Math.max(340,Math.min(440,W*0.46)):300,{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:12,r:16,b:46,l:54},h=cfg.big?Math.max(340,Math.min(440,W*0.46)):300,{g,iw,ih}=svgBase(ho,W,h,m);
   const x=d3.scaleBand().domain(cfg.bars.map(d=>d.x)).range([0,iw]).padding(.25);
   const y=d3.scaleLinear().domain([0,d3.max(cfg.bars,d=>d.value)*1.13]).range([ih,0]);
-  gridY(g,y,iw);g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x)).selectAll('text').attr('transform','rotate(-35)').style('text-anchor','end');
+  gridY(g,y,iw);g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x)).selectAll('text').attr('transform','rotate(-30)').attr('dy','0.8em').style('text-anchor','end').attr('font-size',11);
   g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(yAxisFmt(cfg.yfmt)));ylab(g,m,ih,cfg.ylabel);
   g.selectAll('rect.bar').data(cfg.bars).join('rect').attr('class','bar').attr('x',d=>x(d.x)).attr('y',d=>y(d.value)).attr('width',x.bandwidth()).attr('height',d=>ih-y(d.value)).attr('fill',cfg.color||'#7a3b9a').attr('rx',2)
    .on('mousemove',(e,d)=>tip(`<b>${d.x}</b><br>${fmt(d.value,cfg.yfmt)} ${cfg.unit||''}`,e)).on('mouseleave',untip);
   g.selectAll('text.bl').data(cfg.bars).join('text').attr('class','bl').attr('x',d=>x(d.x)+x.bandwidth()/2).attr('y',d=>y(d.value)-5).attr('text-anchor','middle').attr('font-size',9.5).attr('fill','#54504a').text(d=>fmt(d.value,cfg.yfmt));
+  if(cfg.fit){const n=cfg.bars.length,xs=cfg.bars.map((_,i)=>i),ys=cfg.bars.map(d=>Math.log(d.value));
+    const mx=d3.mean(xs),my=d3.mean(ys);let nu=0,de=0;for(let i=0;i<n;i++){nu+=(xs[i]-mx)*(ys[i]-my);de+=(xs[i]-mx)**2;}
+    const bb=nu/de,aa=my-bb*mx,fv=xs.map(i=>({x:cfg.bars[i].x,v:Math.exp(aa+bb*i)}));
+    g.append('path').datum(fv).attr('d',d3.line().x(d=>x(d.x)+x.bandwidth()/2).y(d=>y(d.v))).attr('fill','none').attr('stroke','#1d1c1a').attr('stroke-width',2.4).attr('stroke-dasharray','6 4');
+    const gr=Math.round((Math.exp(bb*(cfg.fitPerYear||4))-1)*100);legendItem(le,'#1d1c1a',`trend ≈ +${gr}%/yr`);}
 }
 function stackChart(ho,le,W,cfg){
   const m={t:18,r:cfg.line2?58:16,b:28,l:54},h=cfg.big?Math.max(390,Math.min(560,W*0.5)):320,{g,iw,ih}=svgBase(ho,W,h,m);
@@ -338,10 +343,9 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('ai_component_share.csv',['date','cowos','hbm','logic'],s.lines['CoWoS packaging'].map((d,i)=>[d.date,d.value,s.lines['HBM memory'][i].value,s.lines['Advanced logic wafers'][i].value])));}
   {const s=S.euv_units;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'systems / year',unit:'systems'}),
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
-  if(S.cowos_supply){const s=S.cowos_supply;const b=s.bars;
-   const yoy=b.map((d,i)=>i>=4?{x:d.x,value:+((d.value/b[i-4].value-1)*100).toFixed(0)}:null).filter(Boolean);
-   card(g3,s,(ho,le,W)=>comboChart(ho,le,W,{bars:b,line:yoy,barName:'Production',barUnit:'wafers',barColor:'#7a3b9a',lineName:'YoY growth',lineUnit:'%',lineColor:'#b2453a',ylabel:'CoWoS wafers / quarter',big:true}),
-     ()=>downloadCSV('cowos_production.csv',['quarter','wafers'],b.map(d=>[d.x,d.value])),null,'full');}
+  if(S.cowos_supply){const s=S.cowos_supply;
+   card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',unit:'wafers',ylabel:'CoWoS wafers / quarter',big:true,fit:true,fitPerYear:4}),
+     ()=>downloadCSV('cowos_production.csv',['quarter','wafers'],s.bars.map(d=>[d.x,d.value])),null,'full');}
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}
