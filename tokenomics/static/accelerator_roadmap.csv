@@ -1,0 +1,9 @@
+chip,vendor,year,tdp_w,fp4_pflops_dense,status,note
+B200,NVIDIA,2024,1000,9,actual,Epoch ml_hardware
+GB200,NVIDIA,2025,1200,10,actual,Epoch ml_hardware (per-GPU)
+B300,NVIDIA,2025,1100,14,actual,Epoch ml_hardware
+GB300,NVIDIA,2025,1400,15,actual,Epoch ml_hardware (per-GPU)
+Rubin VR200,NVIDIA,2026,2300,35,roadmap,"GTC2026: 35 PF FP4 dense; TDP 1.8-2.3kW"
+Rubin Ultra VR300,NVIDIA,2027,3600,70,roadmap,"~2x Rubin dense (100 PF peak); 3.6kW"
+MI355X,AMD,2025,1400,10,actual,"AMD CDNA4 (~10 PF dense FP4)"
+MI400,AMD,2026,2250,40,roadmap,"AMD: 40 PF FP4; TDP leak ~2-2.5kW"

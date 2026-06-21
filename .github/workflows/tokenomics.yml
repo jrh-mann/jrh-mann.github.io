@@ -1,0 +1,35 @@
+name: Refresh tokenomics data
+
+on:
+  schedule:
+    - cron: '17 6 * * *'      # daily 06:17 UTC
+  workflow_dispatch:           # manual run button
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tokenomics-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build data.json (live pull from all sources)
+        run: python3 tokenomics/build_data.py
+      - name: Commit if changed
+        run: |
+          if [ -n "$(git status --porcelain tokenomics/data.json tokenomics/static)" ]; then
+            git config user.name "tokenomics-bot"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add tokenomics/data.json tokenomics/static
+            git commit -m "auto: refresh tokenomics data [skip ci]"
+            git push
+          else
+            echo "No data change."
+          fi
