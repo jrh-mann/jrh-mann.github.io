@@ -123,14 +123,14 @@ for r in sales:
     d = r.get("End date"); des = (r.get("Chip manufacturer") or "Other").replace("Nvidia", "NVIDIA")
     if d and d <= "2025-12-31": srcagg[d][des] += num(r.get("Compute estimate in H100e (median)")) or 0
 alldes = sorted({k for v in srcagg.values() for k in v}, key=lambda k: -srcagg[max(srcagg)][k] if k in srcagg[max(srcagg)] else 0)
-topdes = alldes[:5]
+topdes = alldes[:5]; skeys = topdes + ["Other"]
 src_rows = []
 for d in sorted(srcagg):
-    row = {"date": d}; oth = 0
+    row = {"date": d, **{k: 0 for k in skeys}}
     for k, v in srcagg[d].items():
         if k in topdes: row[k] = v / 1e6
-        else: oth += v / 1e6
-    row["Other"] = oth; src_rows.append(row)
+        else: row["Other"] += v / 1e6
+    src_rows.append(row)
 series["compute_by_source"] = {"title": "Cumulative AI compute by chip designer", "unit": "million H100e", "yfmt": "num",
     "blurb": "Where the installed compute comes from — cumulative H100-equivalents by chip designer. NVIDIA dominates; custom silicon (Google, Amazon) and AMD are the challengers.",
     "source": "Epoch AI — AI Chip Sales (CC-BY)", "url": "https://epoch.ai/data/ai-chip-sales",

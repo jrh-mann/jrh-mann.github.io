@@ -144,7 +144,7 @@ function lineChart(ho,le,W,cfg){
     g.append('rect').attr('x',x0).attr('y',0).attr('width',x1-x0).attr('height',ih).attr('fill',b[3]).attr('opacity',0.10);
     g.append('text').attr('x',x0+5).attr('y',12).attr('text-anchor','start').attr('fill',b[3]).attr('font-size',9.5).attr('font-weight',600).attr('opacity',0.85).text(b[0]);});
   if(cfg.refs)cfg.refs.filter(r=>!r.year).forEach(r=>{g.append('line').attr('x1',0).attr('x2',iw).attr('y1',y(r.value)).attr('y2',y(r.value)).attr('stroke','#c9b89f').attr('stroke-dasharray','5 3').attr('stroke-width',1);
-    g.append('text').attr('x',iw-2).attr('y',y(r.value)-4).attr('text-anchor','end').attr('fill','#a8895f').attr('font-size',9.5).text(r.label);});
+    g.append('text').attr('x',4).attr('y',y(r.value)-4).attr('text-anchor','start').attr('fill','#a8895f').attr('font-size',9.5).text(r.label);});
   if(cfg.refs)cfg.refs.filter(r=>r.year).forEach(r=>{const px=x(new Date(r.year,11,31));g.append('circle').attr('cx',px).attr('cy',y(r.value)).attr('r',5).attr('fill','#7a3b9a').attr('stroke','#fff');
     g.append('text').attr('x',px).attr('y',y(r.value)-9).attr('text-anchor','middle').attr('fill','#7a3b9a').attr('font-size',10).attr('font-weight',600).text(r.label);});
   const line=d3.line().x(d=>x(d.t)).y(d=>y(d.y)).curve(d3.curveMonotoneX);
@@ -267,7 +267,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   {const s=S.compute_trends;const fmap={'FP4':'fp4','FP8':'fp8','FP16/BF16':'fp16'};
    const groups=Object.entries(s.precision).map(([k,pts])=>({name:k,color:PAL[k],cls:k.replace(/\W/g,''),pts:pts.map(p=>({year:p.year,y:p.pflops,label:p.name})),
      future:(s.roadmap||[]).map(r=>({year:r.year,y:r[fmap[k]],name:r.name})).filter(d=>d.y)}));
-   card(g2,s,(ho,le,W)=>scatterChart(ho,le,W,{groups,unit:'PFLOPS',ylabel:'PFLOPS per chip (log)',xmax:2028}),
+   card(g2,s,(ho,le,W)=>scatterChart(ho,le,W,{groups,unit:'PFLOPS',ylabel:'PFLOPS per chip (log)',xmax:2028,big:true}),
      ()=>{const rows=[];Object.entries(s.precision).forEach(([k,pts])=>pts.forEach(p=>rows.push([p.name,p.vendor,k,p.year,p.pflops])));downloadCSV('compute_per_chip.csv',['chip','vendor','precision','year','pflops'],rows);});}
   {const s=S.chip_power;card(g2,s,(ho,le,W)=>scatterChart(ho,le,W,{groups:s.groups,unit:'W',ylabel:'watts per chip (log)',xmax:2028}),
      ()=>downloadCSV('chip_power.csv',['chip','vendor','year','watts'],s.groups[0].pts.map(p=>[p.name,p.vendor,p.year,p.y])));}
