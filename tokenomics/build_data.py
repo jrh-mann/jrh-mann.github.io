@@ -106,7 +106,7 @@ for i in range(6):
     phh.append({"year": 2026 + i, "value": P0 * 3.3 ** (i + 1) / EFF ** (i + 1)})
 series["fleet_power"] = {"title": "AI fleet power draw", "unit": "GW", "yfmt": "num",
     "blurb": "Total power of all AI silicon. 'Facility' adds the ~2.5x overhead (servers, networking, cooling).",
-    "source": "Epoch AI — AI Chip Sales (CC-BY); facility = chip TDP x2.5", "url": "https://epoch.ai/data-insights/ai-datacenter-power",
+    "source": "Epoch AI — AI Chip Sales (CC-BY)", "url": "https://epoch.ai/data-insights/ai-datacenter-power",
     "history": ph, "projection": {"central": pc, "lo": pl, "hi": phh,
         "scenarios": [
             {"key": "lo", "name": "Floor — install 1.5×/yr", "color": "#9aa0a6", "note": "Matches the 1.5×/yr install floor."},
@@ -196,14 +196,30 @@ def cyr(d):
 prec = {"FP16/BF16": "Tensor-FP16/BF16 performance (FLOP/s)", "FP8": "FP8 performance (FLOP/s)", "FP4": "FP4 performance (FLOP/s)"}
 ct = {lab: [{"year": cyr(r["Release date"]), "pflops": num(r[col]) / 1e15, "name": r["Hardware name"], "vendor": r.get("Manufacturer", "")}
             for r in ml if cyr(r.get("Release date", "")) and num(r.get(col)) and cyr(r["Release date"]) >= 2019] for lab, col in prec.items()}
+ROAD = [{"name": "Rubin VR200", "year": 2026.5, "fp4": 35, "fp8": 17.5, "fp16": 8.75, "tdp": 2300, "vendor": "NVIDIA"},
+        {"name": "Rubin Ultra VR300", "year": 2027.5, "fp4": 70, "fp8": 35, "fp16": 17.5, "tdp": 3600, "vendor": "NVIDIA"},
+        {"name": "AMD MI400", "year": 2026.5, "fp4": 40, "fp8": 20, "fp16": 10, "tdp": 2250, "vendor": "AMD"}]
 series["compute_trends"] = {"title": "Compute per chip, by numeric precision", "unit": "PFLOPS per chip", "yfmt": "num",
-    "blurb": "Per-chip performance (log) by precision. Each generation does more — and draws more.",
+    "blurb": "Per-chip performance (log) by precision. Filled points are the frontier; stars are announced roadmap parts.",
     "source": "Epoch AI — ML Hardware (CC-BY)", "url": "https://epoch.ai/data/machine-learning-hardware",
-    "precision": ct, "roadmap": [
-        {"name": "Rubin VR200", "year": 2026.5, "fp4": 35, "vendor": "NVIDIA"},
-        {"name": "Rubin Ultra VR300", "year": 2027.5, "fp4": 70, "vendor": "NVIDIA"},
-        {"name": "AMD MI400", "year": 2026.5, "fp4": 40, "vendor": "AMD"}]}
+    "precision": ct, "roadmap": [{k: r[k] for k in ("name", "year", "fp4", "fp8", "fp16", "vendor")} for r in ROAD]}
 live["compute_trends"] = lM
+
+# ---- per-chip power (TDP) and energy efficiency (live from ml_hardware)
+pw = [{"year": cyr(r["Release date"]), "y": num(r["TDP (W)"]), "name": r["Hardware name"], "vendor": r.get("Manufacturer", "")}
+      for r in ml if cyr(r.get("Release date", "")) and num(r.get("TDP (W)")) and num(r["TDP (W)"]) >= 150 and cyr(r["Release date"]) >= 2019]
+series["chip_power"] = {"title": "Power per chip (TDP)", "unit": "W", "yfmt": "num",
+    "blurb": "Thermal design power per accelerator. Each generation does more compute — and draws more power.",
+    "source": "Epoch AI — ML Hardware (CC-BY)", "url": "https://epoch.ai/data/machine-learning-hardware",
+    "groups": [{"name": "TDP (W)", "color": "#b2453a", "pts": pw, "future": [{"year": r["year"], "y": r["tdp"], "name": r["name"]} for r in ROAD]}]}
+live["chip_power"] = lM
+eff = [{"year": cyr(r["Release date"]), "y": num(r["Tensor-FP16/BF16 performance (FLOP/s)"]) / 1e12 / num(r["TDP (W)"]), "name": r["Hardware name"], "vendor": r.get("Manufacturer", "")}
+       for r in ml if cyr(r.get("Release date", "")) and num(r.get("Tensor-FP16/BF16 performance (FLOP/s)")) and num(r.get("TDP (W)")) and cyr(r["Release date"]) >= 2019]
+series["chip_efficiency"] = {"title": "Energy efficiency (FP16 per watt)", "unit": "TFLOP/s per W", "yfmt": "num",
+    "blurb": "Tensor-FP16 throughput per watt — the deflator on power. Improving, but slower than per-chip compute climbs.",
+    "source": "Epoch AI — ML Hardware (CC-BY)", "url": "https://epoch.ai/data/machine-learning-hardware",
+    "groups": [{"name": "TFLOP/s per W", "color": "#4e9a51", "pts": eff, "future": [{"year": r["year"], "y": r["fp16"] * 1000 / r["tdp"], "name": r["name"]} for r in ROAD]}]}
+live["chip_efficiency"] = lM
 
 # ============================================================ LIVE: FinMind monthly
 def finmind(sid):
@@ -311,7 +327,7 @@ try:
     H = [{"year": y, "value": round(hpc[y][0], 2), "share": hpc[y][1]} for y in sorted(hpc)]
     fit = fit_exp([h["year"] for h in H if h["year"] >= 2022], [h["value"] for h in H if h["year"] >= 2022])
     y0 = min(h["year"] for h in H)
-    fitline = [{"year": y, "value": round(fit(y), 1)} for y in range(max(2022, y0), 2031)]
+    fitline = [{"year": y, "value": round(fit(y), 1)} for y in range(y0, 2031)]
     series["tsmc_hpc"] = {"title": "TSMC HPC-platform revenue", "unit": "US$ billions", "yfmt": "usd",
         "blurb": "TSMC's HPC (AI/datacentre) platform as a share of the world's leading foundry. The light line is a log-linear fit on 2022+ history, drawn back through the points and extrapolated to 2030.",
         "source": "TSMC 20-F (platform revenue), parsed from SEC EDGAR; NT$ at ~31/US$", "url": "https://investor.tsmc.com/english",
@@ -376,18 +392,23 @@ try:
             if not row: continue
             dt = row["asOfDate"][:7]; val = row["reportedValue"]["raw"]
             (rev_d if ty == "quarterlyTotalRevenue" else op_d)[dt] = val
-    pts = []
+    qd = {}
+    # base: bundled history (KRW trn -> US$), extends further back than Yahoo
+    for r in read_static("skhynix_quarterly.csv"):
+        qd[r["quarter"]] = {"x": r["quarter"], "revenue": round(num(r["revenue_krw_t"]) * 1000 / 1350, 1), "margin": num(r["op_margin_pct"])}
+    # overlay live Yahoo (US$) on recent quarters
     for dt in sorted(rev_d):
         if dt in op_d and rev_d[dt]:
             q = f"{dt[:4]}-Q{(int(dt[5:7]) - 1)//3 + 1}"
-            pts.append({"x": q, "revenue": round(rev_d[dt] / 1e9 / 1350, 1), "margin": round(op_d[dt] / rev_d[dt] * 100, 1)})
+            qd[q] = {"x": q, "revenue": round(rev_d[dt] / 1e9 / 1350, 1), "margin": round(op_d[dt] / rev_d[dt] * 100, 1)}
+    pts = [qd[q] for q in sorted(qd)]
     if len(pts) < 4: raise ValueError("too few SK Hynix points")
     series["skhynix"] = {"title": "SK Hynix — the HBM leader", "unit": "US$ bn (rev) / % (margin)", "yfmt": "num",
         "blurb": "World #1 HBM maker (~62% share, ~70% of Rubin HBM4). Revenue converted to US$ (~1,350 ₩/US$).",
         "source": "SK Hynix quarterly financials via Yahoo Finance (000660.KS)", "url": "https://finance.yahoo.com/quote/000660.KS",
         "points": pts}
     live["skhynix"] = True
-    cache("skhynix_quarterly.csv", [{"quarter": p["x"], "revenue_krw_t": p["revenue"], "op_income_krw_t": "", "op_margin_pct": p["margin"]} for p in pts])
+    # NB: do not cache() over skhynix_quarterly.csv — it is the bundled KRW history base.
 except Exception as e:
     print("  WARN skhynix:", e)
     r = read_static("skhynix_quarterly.csv")

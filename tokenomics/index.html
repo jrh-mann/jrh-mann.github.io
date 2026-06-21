@@ -19,8 +19,9 @@ layout: null
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1060px;margin:0 auto;padding:0 22px}
-.grid{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
-.grid>.chart-card{flex:1 1 430px;min-width:0;margin-top:0}
+.grid{display:flex;flex-wrap:wrap;gap:20px;align-items:stretch}
+.grid>.chart-card{flex:1 1 430px;min-width:0;margin-top:0;display:flex;flex-direction:column}
+.grid>.chart-card.big{flex:1 1 460px}
 h1,h2,h3{font-family:'Fraunces','Georgia',serif;font-weight:600;letter-spacing:-0.01em;line-height:1.12}
 header{padding:78px 0 26px}
 h1{font-size:clamp(34px,6vw,58px)}
@@ -39,7 +40,7 @@ h2{font-size:clamp(24px,3.6vw,34px);margin-bottom:10px}
 .scen{font-size:12px;color:#54504a;margin-top:10px;border-top:1px dashed var(--line);padding-top:9px}
 .scen .scen-h{color:var(--muted);margin-bottom:3px}
 .scen div{margin:1px 0}
-.chart-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.chart-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:auto;padding-top:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
 .chart-foot a{color:var(--c-blue);text-decoration:none;border-bottom:1px solid #cfe0ea}
 .chart-foot a:hover{border-color:var(--c-blue)}
 .dl{cursor:pointer;background:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;color:#54504a;font-family:inherit;font-size:11.5px}
@@ -103,7 +104,7 @@ const PAL={'CoWoS packaging':'#b2453a','HBM memory':'#7a3b9a','Advanced logic wa
  Ampere:'#a7a097',Hopper:'#2b6c8f',Blackwell:'#4e9a51',Rubin:'#7a3b9a',
  Wiwynn:'#b2453a',Quanta:'#d3873f',Wistron:'#2b6c8f','FP16/BF16':'#2b6c8f','FP8':'#4e9a51','FP4':'#b2453a',
  NVIDIA:'#76b900',Google:'#4285f4',AMD:'#ed1c24',Amazon:'#ff9900',Huawei:'#8a6d3b',Cambricon:'#9467bd',Other:'#c9c2b6'};
-const ERAS=[['Hopper','2023-04-01','2024-10-01','#2b6c8f'],['Blackwell','2024-10-01','2026-07-01','#4e9a51'],['Rubin (expected)','2026-07-01','2027-12-01','#7a3b9a']];
+const ERAS=[['Ampere','2021-06-01','2023-04-01','#8a8378'],['Hopper','2023-04-01','2024-10-01','#2b6c8f'],['Blackwell','2024-10-01','2026-07-01','#d3873f'],['Rubin (expected)','2026-07-01','2027-12-01','#7a3b9a']];
 function plainNum(d){if(d===0)return'0';const a=Math.abs(d);return a<1?(+d.toFixed(2))+'':a<1000?(+d.toFixed(a<10?1:0))+'':(+(d/1000).toFixed(1))+'k';}
 function fmt(v,k){if(v==null||isNaN(v))return'–';if(k==='pct')return d3.format('.0f')(v)+'%';if(k==='usd')return '$'+plainNum(v)+'B';
  if(k==='si'){const a=Math.abs(v);return a>=1e9?d3.format('.1f')(v/1e9)+'B':a>=1e6?d3.format('.1f')(v/1e6)+'M':a>=1e3?d3.format('.0f')(v/1e3)+'k':d3.format('.0f')(v);}return plainNum(v);}
@@ -118,7 +119,7 @@ function svgBase(holder,w,h,m){const svg=d3.select(holder).append('svg').attr('w
 function ylab(g,m,ih,t){if(!t)return;g.append('text').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',-m.l+14).attr('text-anchor','middle').attr('fill','var(--muted)').attr('font-size',11).text(t);}
 function legendItem(legend,color,label,kind){const s=document.createElement('span');s.innerHTML=`<i class="${kind||''}" style="${kind==='ring'?'border-color:':'background:'}${color}"></i>${label}`;legend.appendChild(s);}
 const redraws=[];let rT;addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(()=>redraws.forEach(f=>f()),180);});
-function card(grid,s,builder,dl,extra){const c=document.createElement('div');c.className='chart-card';
+function card(grid,s,builder,dl,extra,cls){const c=document.createElement('div');c.className='chart-card'+(cls?' '+cls:'');
  const live=s.fresh==='live'?'· <b style="color:var(--c-green)">● live</b>':(s.asof?'· filing as of '+s.asof:'');
  c.innerHTML=`<h3>${s.title}</h3><div class="chart-blurb">${s.blurb||''}</div><div class="legend"></div><div class="chart-svg-holder"></div>${extra||''}
    <div class="chart-foot"><span>Source: ${s.source||''} ${live}</span><span><button class="dl">⬇ data</button> &nbsp; <a href="${s.url||'#'}" target="_blank" rel="noopener">source ↗</a></span></div>`;
@@ -128,7 +129,7 @@ function scenNote(scs,head){return `<div class="scen">${head?`<div class="scen-h
 
 // ===== builders =====
 function lineChart(ho,le,W,cfg){
-  const m={t:12,r:18,b:26,l:60},h=Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:12,r:18,b:26,l:60},h=cfg.big?Math.max(360,Math.min(470,W*0.74)):Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
   const all=[].concat(...cfg.lines.map(l=>l.vals));
   const x=d3.scaleTime().domain(d3.extent(all,d=>d.t)).range([0,iw]);
   let ymax=d3.max(all,d=>d.y),ymin=Math.min(0,d3.min(all,d=>d.y));
@@ -140,8 +141,8 @@ function lineChart(ho,le,W,cfg){
   const yax=d3.axisLeft(y).tickFormat(yAxisFmt(cfg.yfmt));tv?yax.tickValues(tv):yax.ticks(5);
   g.append('g').attr('class','axis').call(yax);ylab(g,m,ih,cfg.ylabel);
   if(cfg.bands)cfg.bands.forEach(b=>{const x0=Math.max(0,x(T(b[1]))),x1=Math.min(iw,x(T(b[2])));if(x1<=x0)return;
-    g.append('rect').attr('x',x0).attr('y',0).attr('width',x1-x0).attr('height',ih).attr('fill',b[3]).attr('opacity',0.07);
-    g.append('text').attr('x',(x0+x1)/2).attr('y',12).attr('text-anchor','middle').attr('fill',b[3]).attr('font-size',9.5).attr('font-weight',600).attr('opacity',0.85).text(b[0]);});
+    g.append('rect').attr('x',x0).attr('y',0).attr('width',x1-x0).attr('height',ih).attr('fill',b[3]).attr('opacity',0.10);
+    g.append('text').attr('x',x0+5).attr('y',12).attr('text-anchor','start').attr('fill',b[3]).attr('font-size',9.5).attr('font-weight',600).attr('opacity',0.85).text(b[0]);});
   if(cfg.refs)cfg.refs.filter(r=>!r.year).forEach(r=>{g.append('line').attr('x1',0).attr('x2',iw).attr('y1',y(r.value)).attr('y2',y(r.value)).attr('stroke','#c9b89f').attr('stroke-dasharray','5 3').attr('stroke-width',1);
     g.append('text').attr('x',iw-2).attr('y',y(r.value)-4).attr('text-anchor','end').attr('fill','#a8895f').attr('font-size',9.5).text(r.label);});
   if(cfg.refs)cfg.refs.filter(r=>r.year).forEach(r=>{const px=x(new Date(r.year,11,31));g.append('circle').attr('cx',px).attr('cy',y(r.value)).attr('r',5).attr('fill','#7a3b9a').attr('stroke','#fff');
@@ -177,7 +178,10 @@ function stackChart(ho,le,W,cfg){
   gridY(g,y,iw);g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6));
   g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(yAxisFmt(cfg.yfmt)));ylab(g,m,ih,cfg.ylabel);
   const area=d3.area().x(d=>x(d.data.t)).y0(d=>y(d[0])).y1(d=>y(d[1])).curve(d3.curveLinear);
-  g.selectAll('path.l').data(stk).join('path').attr('class','l').attr('d',area).attr('fill',d=>PAL[d.key]||'#999').attr('opacity',.92);
+  g.selectAll('path.l').data(stk).join('path').attr('class','l').attr('d',area).attr('fill',d=>PAL[d.key]||'#999').attr('opacity',.9);
+  if(cfg.bands)cfg.bands.forEach(b=>{const x0=Math.max(0,x(T(b[1])));if(x0<0||x0>iw)return;
+    g.append('line').attr('x1',x0).attr('x2',x0).attr('y1',0).attr('y2',ih).attr('stroke',b[3]).attr('stroke-dasharray','3 3').attr('opacity',.5);
+    g.append('text').attr('x',x0+4).attr('y',11).attr('fill',b[3]).attr('font-size',9.5).attr('font-weight',600).attr('opacity',.9).text(b[0]);});
   cfg.keys.forEach(k=>legendItem(le,PAL[k]||'#999',k));
   const focus=g.append('line').attr('y1',0).attr('y2',ih).attr('stroke','#bdb4a6').attr('opacity',0);
   g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
@@ -185,25 +189,29 @@ function stackChart(ho,le,W,cfg){
      let rows='';cfg.keys.forEach(k=>{rows+=`<div><i style="display:inline-block;width:8px;height:8px;background:${PAL[k]};border-radius:2px;margin-right:5px"></i>${k}: <b>${fmt(d[k],cfg.yfmt)}</b></div>`;});
      tip(`<b>${d3.timeFormat('%b %Y')(d.t)}</b>${rows}`,e);}).on('mouseleave',()=>{untip();focus.attr('opacity',0);});
 }
+function fitLog(pts){const n=pts.length;if(n<2)return null;const xs=pts.map(p=>p.year),ys=pts.map(p=>Math.log10(p.y));const mx=d3.mean(xs),my=d3.mean(ys);let nu=0,de=0;for(let i=0;i<n;i++){nu+=(xs[i]-mx)*(ys[i]-my);de+=(xs[i]-mx)**2;}if(!de)return null;const b=nu/de,a=my-b*mx;return x=>Math.pow(10,a+b*x);}
 function scatterChart(ho,le,W,cfg){
-  const m={t:12,r:16,b:28,l:56},h=350,{g,iw,ih}=svgBase(ho,W,h,m);
-  const all=[].concat(...cfg.groups.map(gr=>gr.pts)).concat(cfg.stars||[]);
-  const x=d3.scaleLinear().domain([d3.min(all,d=>d.year)-0.3,(cfg.xmax||d3.max(all,d=>d.year))+0.4]).range([0,iw]);
-  const y=d3.scaleLog().domain([d3.min(all,d=>d.y)*0.7,d3.max(all,d=>d.y)*1.4]).range([ih,0]);
+  const m={t:12,r:16,b:28,l:58},h=cfg.big?Math.max(360,Math.min(440,W*0.66)):340,{g,iw,ih}=svgBase(ho,W,h,m);
+  const all=[].concat(...cfg.groups.map(gr=>gr.pts.concat(gr.future||[])));
+  const xmax=cfg.xmax||d3.max(all,d=>d.year);
+  const x=d3.scaleLinear().domain([d3.min(all,d=>d.year)-0.3,xmax+0.4]).range([0,iw]);
+  const y=d3.scaleLog().domain([d3.min(all,d=>d.y)*0.7,d3.max(all,d=>d.y)*1.5]).range([ih,0]);
   gridY(g,y,iw,decades(y));g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6).tickFormat(d3.format('d')));
   g.append('g').attr('class','axis').call(d3.axisLeft(y).tickValues(decades(y)).tickFormat(d3.format('~g')));ylab(g,m,ih,cfg.ylabel);
+  let anyFut=false;
   cfg.groups.forEach(gr=>{
-    g.selectAll('._s'+gr.cls).data(gr.pts).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',3.6).attr('fill',gr.color).attr('opacity',.5).attr('stroke','#fff').attr('stroke-width',.4)
-     .on('mousemove',(e,d)=>tip(`<b>${d.label}</b><br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit}`,e)).on('mouseleave',untip);
+    g.selectAll('._s'+gr.cls).data(gr.pts).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',3.3).attr('fill',gr.color).attr('opacity',.38).attr('stroke','#fff').attr('stroke-width',.4)
+     .on('mousemove',(e,d)=>tip(`<b>${d.label||d.name}</b><br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit||''}`,e)).on('mouseleave',untip);
     const sorted=[...gr.pts].sort((a,b)=>a.year-b.year);let mx=-Infinity;const fr=[];sorted.forEach(p=>{if(p.y>mx*1.0001){mx=p.y;fr.push(p);}});
-    g.selectAll('._f'+gr.cls).data(fr).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',5).attr('fill',gr.color).attr('stroke','#1d1c1a').attr('stroke-width',.7)
-     .on('mousemove',(e,d)=>tip(`<b>${d.label}</b> (frontier)<br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit}`,e)).on('mouseleave',untip);
-    g.append('path').datum(fr).attr('d',d3.line().x(d=>x(d.year)).y(d=>y(d.y))).attr('fill','none').attr('stroke',gr.color).attr('stroke-width',1.4).attr('opacity',.55);
+    const f=fitLog(fr);if(f&&fr.length>1){const xx=[fr[0].year,xmax];g.append('path').datum(xx).attr('d',d3.line().x(d=>x(d)).y(d=>y(f(d)))).attr('fill','none').attr('stroke',gr.color).attr('stroke-width',1.6).attr('stroke-dasharray','6 4').attr('opacity',.8);}
+    g.selectAll('._f'+gr.cls).data(fr).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',5).attr('fill',gr.color).attr('stroke','#1d1c1a').attr('stroke-width',1)
+     .on('mousemove',(e,d)=>tip(`<b>${d.label||d.name}</b> · frontier<br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit||''}`,e)).on('mouseleave',untip);
+    const fut=gr.future||[];if(fut.length)anyFut=true;
+    g.selectAll('._x'+gr.cls).data(fut).join('path').attr('d',d3.symbol(d3.symbolStar,150)()).attr('transform',d=>`translate(${x(d.year)},${y(d.y)})`).attr('fill',gr.color).attr('stroke','#1d1c1a').attr('stroke-width',.6)
+     .on('mousemove',(e,d)=>tip(`<b>${d.name}</b> · roadmap<br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit||''}`,e)).on('mouseleave',untip);
     legendItem(le,gr.color,gr.name,'dot');});
-  if(cfg.stars&&cfg.stars.length){g.selectAll('.star').data(cfg.stars).join('path').attr('d',d3.symbol(d3.symbolStar,150)()).attr('transform',d=>`translate(${x(d.year)},${y(d.y)})`).attr('fill',d=>d.color).attr('stroke','#1d1c1a').attr('stroke-width',.6)
-     .on('mousemove',(e,d)=>tip(`<b>${d.label}</b> · announced roadmap<br>${fmt(d.y,'num')} ${cfg.unit}`,e)).on('mouseleave',untip);
-    legendItem(le,'#555','★ roadmap (announced)','dot');}
-  legendItem(le,'#777','● filled = frontier','dot');
+  legendItem(le,'#777','● filled = frontier · – – fit','dot');
+  if(anyFut)legendItem(le,'#555','★ roadmap','dot');
 }
 function comboChart(ho,le,W,cfg){
   const m={t:14,r:52,b:40,l:54},h=320,{g,iw,ih}=svgBase(ho,W,h,m);
@@ -247,19 +255,24 @@ fetch('data.json').then(r=>r.json()).then(D=>{
 
   // 1 — install + power side by side
   let g1=section('s1','01 · the trend','How much AI compute is coming?','The installed stock of AI compute and the power it draws, with scenario ranges for how each could grow.');
-  {const s=S.compute_stock;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'si',log:true,ylabel:'H100-equivalents (log)',lines:projLines(s,'median','Installed compute','#1d1c1a')}),
-     ()=>downloadCSV('compute_stock.csv',['date','median','lo','hi'],s.history.map(d=>[d.date,d.median,d.lo,d.hi])),scenNote(s.projection.scenarios,'Install scenarios (from end-2025):'));}
-  {const s=S.fleet_power;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,yloMul:0.07,ylabel:'GW, facility (log)',refs:s.refs,lines:projLines(s,'facility_gw','Facility power','#1d1c1a')}),
-     ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note));}
+  {const s=S.compute_stock;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'si',log:true,big:true,ylabel:'H100-equivalents (log)',lines:projLines(s,'median','Installed compute','#1d1c1a')}),
+     ()=>downloadCSV('compute_stock.csv',['date','median','lo','hi'],s.history.map(d=>[d.date,d.median,d.lo,d.hi])),scenNote(s.projection.scenarios,'Install scenarios (from end-2025):'),'big');}
+  {const s=S.fleet_power;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,yloMul:0.07,ylabel:'GW, facility (log)',refs:s.refs,lines:projLines(s,'facility_gw','Facility power','#1d1c1a')}),
+     ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note),'big');}
   {const s=S.compute_by_source;card(g1,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million H100e (cumulative)'}),
      ()=>downloadCSV('compute_by_source.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k]||0)])));}
 
   // 2 — chip
   let g2=section('s2','02 · the chip',"What's in a chip?",'Per-chip performance by numeric precision (log). Filled points are the frontier (record-setters); stars are announced roadmap parts.');
-  {const s=S.compute_trends;const groups=Object.entries(s.precision).map(([k,pts])=>({name:k,color:PAL[k],cls:k.replace(/\W/g,''),pts:pts.map(p=>({year:p.year,y:p.pflops,label:p.name}))}));
-   const stars=(s.roadmap||[]).map(r=>({year:r.year,y:r.fp4,label:r.name,color:'#b2453a'}));
-   card(g2,s,(ho,le,W)=>scatterChart(ho,le,W,{groups,stars,unit:'PFLOPS',ylabel:'PFLOPS per chip (log)',xmax:2028}),
+  {const s=S.compute_trends;const fmap={'FP4':'fp4','FP8':'fp8','FP16/BF16':'fp16'};
+   const groups=Object.entries(s.precision).map(([k,pts])=>({name:k,color:PAL[k],cls:k.replace(/\W/g,''),pts:pts.map(p=>({year:p.year,y:p.pflops,label:p.name})),
+     future:(s.roadmap||[]).map(r=>({year:r.year,y:r[fmap[k]],name:r.name})).filter(d=>d.y)}));
+   card(g2,s,(ho,le,W)=>scatterChart(ho,le,W,{groups,unit:'PFLOPS',ylabel:'PFLOPS per chip (log)',xmax:2028}),
      ()=>{const rows=[];Object.entries(s.precision).forEach(([k,pts])=>pts.forEach(p=>rows.push([p.name,p.vendor,k,p.year,p.pflops])));downloadCSV('compute_per_chip.csv',['chip','vendor','precision','year','pflops'],rows);});}
+  {const s=S.chip_power;card(g2,s,(ho,le,W)=>scatterChart(ho,le,W,{groups:s.groups,unit:'W',ylabel:'watts per chip (log)',xmax:2028}),
+     ()=>downloadCSV('chip_power.csv',['chip','vendor','year','watts'],s.groups[0].pts.map(p=>[p.name,p.vendor,p.year,p.y])));}
+  {const s=S.chip_efficiency;card(g2,s,(ho,le,W)=>scatterChart(ho,le,W,{groups:s.groups,unit:'TFLOP/s/W',ylabel:'TFLOP/s per W (log)',xmax:2028}),
+     ()=>downloadCSV('chip_efficiency.csv',['chip','vendor','year','tflops_per_w'],s.groups[0].pts.map(p=>[p.name,p.vendor,p.year,p.y])));}
 
   // 3 — bottlenecks
   let g3=section('s3','03 · the squeeze','Why it is bottlenecked','AI already consumes almost all advanced packaging and memory; the lithography that makes the chips comes from a single company; and chip output marches one generation at a time.');
@@ -268,11 +281,11 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('ai_component_share.csv',['date','cowos','hbm','logic'],s.lines['CoWoS packaging'].map((d,i)=>[d.date,d.value,s.lines['HBM memory'][i].value,s.lines['Advanced logic wafers'][i].value])));}
   {const s=S.euv_units;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'systems / year',unit:'systems'}),
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
-  {const s=S.nvidia_production;card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter'}),
+  {const s=S.nvidia_production;card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter',bands:ERAS}),
      ()=>downloadCSV('nvidia_production.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k])])));}
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));const last={t:h.at(-1).t,y:h.at(-1).y};
    const scen=s.scenarios.map(sc=>({name:sc.name,color:sc.color,dashed:true,dots:false,cls:sc.key,vals:[last].concat(s.proj[sc.key].map(d=>({t:T(d.date),y:d.value})))}));
-   card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',lines:[{name:'Total (history)',color:'#1d1c1a',vals:h,cls:'h'}].concat(scen)}),
+   card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total (history)',color:'#1d1c1a',vals:h,cls:'h'}].concat(scen)}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])),scenNote(s.scenarios,'Unit-growth assumptions:'));}
 
   // 4 — memory
@@ -293,7 +306,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
 
   // 6 — leading edge
   let g6=section('s6','06 · what to watch','The leading edge','Official chip data lags a quarter; these fire earlier. NVIDIA’s forward commitments lead by quarters; TSMC and the Taiwan AI-server makers report monthly (live).');
-  {const s=S.nvidia_commitments;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',ylabel:'US$ billions',lines:[{name:'Supply commitments',color:'#4e9a51',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a'}]}),
+  {const s=S.nvidia_commitments;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',ylabel:'US$ billions',bands:ERAS,lines:[{name:'Supply commitments',color:'#4e9a51',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a'}]}),
      ()=>downloadCSV('nvidia_commitments.csv',['date','usd_bn'],s.points.map(d=>[d.date,d.value])));}
   if(S.tsmc_monthly){const s=S.tsmc_monthly;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',ylabel:'US$ billions / month',bands:ERAS,lines:[{name:'TSMC monthly revenue',color:'#2b6c8f',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a',dots:false}]}),
      ()=>downloadCSV('tsmc_monthly.csv',['month','usd_bn'],s.points.map(d=>[d.date,d.value])));}
@@ -301,9 +314,6 @@ fetch('data.json').then(r=>r.json()).then(D=>{
    card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',bands:ERAS,lines}),
      ()=>{const names=Object.keys(s.lines),base=s.lines[names[0]];downloadCSV('odm_revenue.csv',['month',...names],base.map((d,i)=>[d.date,...names.map(n=>s.lines[n][i]?.value)]));});}
 
-  const n=document.createElement('div');n.className='note';
-  n.innerHTML='<b>On freshness & honesty.</b> Every series is parsed live from primary source on each build (Epoch CSVs, SEC filing text, FinMind, Yahoo). No source discloses a clean HBM number (Micron’s segment is the best proxy). Roadmap chip specs are vendor-announced. Projections are scenarios, not forecasts. Everything is downloadable and linked to source.';
-  main.appendChild(n);
 }).catch(e=>{document.getElementById('sections').innerHTML='<p style="color:#b2453a;padding:40px 0">Could not load data.json — '+e+'</p>';console.error(e);});
 </script>
 </body>
