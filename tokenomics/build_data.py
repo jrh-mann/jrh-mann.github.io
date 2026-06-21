@@ -369,8 +369,8 @@ try:
             y = int(mm.group(2));  v = int(mm.group(1))
             if y not in euv and 5 <= v <= 80: euv.setdefault(y, v)
     if euv:
-        series["euv_units"] = {"title": "EUV machines made per year", "unit": "systems / year", "yfmt": "num",
-            "blurb": "Every leading-edge AI chip needs EUV lithography — made by one company (ASML). Units (NXE+EXE) parsed from ASML 20-Fs.",
+        series["euv_units"] = {"title": "EUV machines made per year (= Carl Zeiss optics sets)", "unit": "systems / year", "yfmt": "num",
+            "blurb": "Every leading-edge AI chip needs EUV lithography — made by one company (ASML), and every machine carries one set of Carl Zeiss optics (the sole supplier). So this is also the Zeiss throughput. Units (NXE+EXE) parsed from ASML 20-Fs.",
             "source": "ASML 20-F (net system sales per technology), parsed from SEC EDGAR", "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000937966&type=20-F",
             "bars": [{"x": str(y), "value": euv[y]} for y in sorted(euv)]}
         live["euv_units"] = True

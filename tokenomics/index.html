@@ -91,7 +91,7 @@ footer a{color:var(--c-blue);text-decoration:none}
 <div class="wrap">
   <header>
     <h1>The&nbsp;AI&nbsp;compute&nbsp;buildout</h1>
-    <p class="lede">How much AI compute is actually coming — and the physical bottlenecks that decide it. Chips, packaging, memory, power. The data, with as little narration as possible.</p>
+    <p class="lede">How much AI compute is actually coming.</p>
     <div class="byline">
       <span><span class="dot"></span>Built end-to-end by Claude</span>
       <span class="tag" id="livetag">live data</span>
@@ -101,7 +101,7 @@ footer a{color:var(--c-blue);text-decoration:none}
   <section id="hero">
     <div class="sec-h">The ecosystem</div>
     <h2>Where AI compute comes from</h2>
-    <p class="sec-intro">Demand for AI compute flows down a supply chain that narrows to a few irreplaceable steps. Hover a stage for its number; click to jump to the data.</p>
+    <p class="sec-intro">Demand for AI compute flows down a supply chain that narrows to a few irreplaceable steps.</p>
     <div class="flow" id="flow"></div>
     <div class="constraints" id="constraints"></div>
   </section>
@@ -144,7 +144,7 @@ function scenNote(scs,head){return `<div class="scen">${head?`<div class="scen-h
 
 // ===== builders =====
 function lineChart(ho,le,W,cfg){
-  const m={t:12,r:18,b:26,l:60},h=cfg.big?Math.max(480,Math.min(680,W*1.05)):Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:12,r:cfg.r2lines?56:18,b:26,l:60},h=cfg.big?Math.max(480,Math.min(680,W*1.05)):Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
   const all=[].concat(...cfg.lines.map(l=>l.vals));
   const x=d3.scaleTime().domain(d3.extent(all,d=>d.t)).range([0,iw]);
   let ymax=d3.max(all,d=>d.y),ymin=Math.min(0,d3.min(all,d=>d.y));
@@ -166,6 +166,13 @@ function lineChart(ho,le,W,cfg){
   cfg.lines.forEach(l=>{g.append('path').datum(l.vals).attr('d',line).attr('fill','none').attr('stroke',l.color).attr('stroke-width',l.w||2.2).attr('stroke-dasharray',l.dashed?'6 4':null);
     if(l.dots!==false)g.selectAll('._d'+l.cls).data(l.vals).join('circle').attr('cx',d=>x(d.t)).attr('cy',d=>y(d.y)).attr('r',2.3).attr('fill',l.color);
     legendItem(le,l.color,l.name+(l.dashed?' (scenario)':''));});
+  if(cfg.r2lines){const v2=[].concat(...cfg.r2lines.map(l=>l.vals.map(p=>p.y)));
+    const y2=d3.scaleLinear().domain([0,d3.max(v2)*1.12]).range([ih,0]);
+    g.append('g').attr('class','axis').attr('transform',`translate(${iw},0)`).call(d3.axisRight(y2).ticks(5).tickFormat(d=>d+'%'));
+    const l2=d3.line().x(d=>x(d.t)).y(d=>y2(d.y)).curve(d3.curveMonotoneX);
+    cfg.r2lines.forEach((l,i)=>{g.append('path').datum(l.vals).attr('d',l2).attr('fill','none').attr('stroke',l.color).attr('stroke-width',l.w||2.6).attr('stroke-dasharray',l.dashed?'6 4':null);
+      if(i===0)legendItem(le,l.color,l.name);});
+    g.append('text').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',iw+46).attr('text-anchor','middle').attr('fill','var(--muted)').attr('font-size',11).text(cfg.r2label||'');}
   const focus=g.append('line').attr('y1',0).attr('y2',ih).attr('stroke','#bdb4a6').attr('opacity',0);
   const dots=cfg.lines.map(l=>g.append('circle').attr('r',4.5).attr('fill','#fff').attr('stroke',l.color).attr('stroke-width',2).attr('opacity',0).style('pointer-events','none'));
   g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
@@ -185,7 +192,7 @@ function barChart(ho,le,W,cfg){
   g.selectAll('text.bl').data(cfg.bars).join('text').attr('class','bl').attr('x',d=>x(d.x)+x.bandwidth()/2).attr('y',d=>y(d.value)-5).attr('text-anchor','middle').attr('font-size',9.5).attr('fill','#54504a').text(d=>fmt(d.value,cfg.yfmt));
 }
 function stackChart(ho,le,W,cfg){
-  const m={t:18,r:16,b:28,l:54},h=cfg.big?Math.max(390,Math.min(560,W*0.5)):320,{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:18,r:cfg.line2?58:16,b:28,l:54},h=cfg.big?Math.max(390,Math.min(560,W*0.5)):320,{g,iw,ih}=svgBase(ho,W,h,m);
   const data=cfg.rows.map(r=>({t:T(r.date),...r}));
   const x=d3.scaleTime().domain(d3.extent(data,d=>d.t)).range([0,iw]);
   const stk=d3.stack().keys(cfg.keys)(data);
@@ -201,6 +208,11 @@ function stackChart(ho,le,W,cfg){
     g.append('line').attr('x1',x0).attr('x2',x0).attr('y1',0).attr('y2',ih).attr('stroke',b[3]).attr('stroke-dasharray','3 3').attr('opacity',.5);
     g.append('text').attr('x',x0+4).attr('y',13).attr('fill',b[3]).attr('font-size',12.5).attr('font-weight',600).attr('opacity',.92).text(b[0]);});
   cfg.keys.forEach(k=>legendItem(le,PAL[k]||'#999',k));
+  if(cfg.line2){const v=cfg.line2.vals;const y2=d3.scaleLog().domain([d3.min(v,d=>d.value)*0.8,d3.max(v,d=>d.value)*1.25]).range([ih,0]);
+    g.append('g').attr('class','axis').attr('transform',`translate(${iw},0)`).call(d3.axisRight(y2).tickValues(decades(y2)).tickFormat(d3.format('~g')));
+    g.append('path').datum(v).attr('d',d3.line().x(d=>x(T(d.date))).y(d=>y2(d.value))).attr('fill','none').attr('stroke',cfg.line2.color).attr('stroke-width',2.8);
+    g.append('text').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',iw+46).attr('text-anchor','middle').attr('font-size',10.5).attr('fill','#666').text(cfg.line2.axisLabel||'');
+    legendItem(le,cfg.line2.color,cfg.line2.name);}
   const focus=g.append('line').attr('y1',0).attr('y2',ih).attr('stroke','#bdb4a6').attr('opacity',0);
   g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
    .on('mousemove',function(e){const mx=d3.pointer(e,this)[0],t0=x.invert(mx),i=d3.bisector(d=>d.t).left(data,t0),d=data[Math.min(i,data.length-1)];focus.attr('x1',x(d.t)).attr('x2',x(d.t)).attr('opacity',1);
@@ -286,13 +298,18 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('compute_stock.csv',['date','median','lo','hi'],s.history.map(d=>[d.date,d.median,d.lo,d.hi])),scenNote(s.projection.scenarios,'Install scenarios (from end-2025):'),'big');}
   {const s=S.fleet_power;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,yloMul:0.07,ylabel:'GW, facility (log)',refs:s.refs,lines:projLines(s,'facility_gw','Facility power','#1d1c1a')}),
      ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note),'big');}
-  if(S.us_energy){const s=S.us_energy;const lastA=s.ai_hist[s.ai_hist.length-1];
+  if(S.us_energy){const s=S.us_energy;
+   const usByYear={};s.us_gen.forEach(d=>{usByYear[d.date.slice(0,4)]=d.value;});
+   const lastUSy=Math.max(...Object.keys(usByYear).map(Number)),lastUSv=usByYear[lastUSy];
+   const usAt=y=>usByYear[y]!=null?usByYear[y]:lastUSv*Math.pow(1.025,y-lastUSy);
+   const pctH=s.ai_hist.map(d=>({t:T(d.date),y:+(d.value/usAt(+d.date.slice(0,4))*100).toFixed(2)}));
+   const lastP=s.ai_hist[s.ai_hist.length-1];
+   const pctP=[lastP].concat(s.ai_proj).map(d=>({t:T(d.date),y:+(d.value/usAt(+d.date.slice(0,4))*100).toFixed(2)}));
    const lines=[{name:'US total generation',color:'#1d1c1a',w:3.2,vals:s.us_gen.map(d=>({t:T(d.date),y:d.value}))}];
-   if(s.us_demand&&s.us_demand.length)lines.push({name:'US demand (retail sales)',color:'#3a7ca5',w:2,vals:s.us_demand.map(d=>({t:T(d.date),y:d.value}))});
-   lines.push({name:'AI datacentres',color:'#b2453a',w:2.8,vals:s.ai_hist.map(d=>({t:T(d.date),y:d.value}))});
-   lines.push({name:'AI ('+s.scenario+')',color:'#b2453a',dashed:true,dots:false,cls:'aip',vals:[lastA].concat(s.ai_proj).map(d=>({t:T(d.date),y:d.value}))});
-   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,ylabel:s.ylabel||'TWh (log)',lines}),
-     ()=>downloadCSV('us_energy.csv',['date','us_twh'],s.us_gen.map(d=>[d.date,d.value])),null,'big');}
+   if(s.us_demand&&s.us_demand.length)lines.push({name:'US demand',color:'#3a7ca5',w:2,vals:s.us_demand.map(d=>({t:T(d.date),y:d.value}))});
+   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',big:true,ylabel:'TWh per year',lines,
+     r2lines:[{name:'AI as % of US grid',color:'#b2453a',w:2.8,vals:pctH},{name:'AI % (scenario)',color:'#b2453a',dashed:true,vals:pctP}],r2label:'AI as % of US generation'}),
+     ()=>downloadCSV('us_energy.csv',['date','us_twh','ai_pct_of_grid'],s.ai_hist.map(d=>[d.date,usAt(+d.date.slice(0,4)),(d.value/usAt(+d.date.slice(0,4))*100).toFixed(2)])),null,'big');}
   {const s=S.compute_by_source;const last=s.rows[s.rows.length-1].date;
    const yrn=ds=>{const d=new Date(ds);return d.getFullYear()+d.getMonth()/12;};
    const fdates=[];for(let y=2026;y<=2027;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
@@ -347,8 +364,10 @@ fetch('data.json').then(r=>r.json()).then(D=>{
        const cpc=(1-sh)*cpcB+sh*cpcR;const cowos=total*cpcB*Math.pow(cg,dt);const tot=cowos/cpc;
        return{date:fd,Ampere:0,Hopper:0,Blackwell:tot*(1-sh),Rubin:tot*sh};});
      const rows=hist.map(r=>({...r,Rubin:0})).concat(frows);
+     const HF={Ampere:0.3,Hopper:1,Blackwell:2.5,Rubin:5};
+     const line2=rows.map(r=>({date:r.date,value:Object.keys(HF).reduce((a,k)=>a+(r[k]||0)*HF[k],0)}));
      const rh=rc.querySelector('#rchart'),rl=rc.querySelector('#rlegend');rh.innerHTML='';rl.innerHTML='';
-     stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true});}
+     stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true,line2:{name:'Total compute (H100e, right axis)',color:'#1d1c1a',vals:line2,axisLabel:'M H100e / q (log)'}});}
    renderR();}
 
   // 4 — memory
