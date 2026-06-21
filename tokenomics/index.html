@@ -23,6 +23,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .grid>.chart-card{flex:1 1 430px;min-width:0;margin-top:0;display:flex;flex-direction:column}
 .grid>.chart-card.big{flex:1 1 460px}
 .grid>.chart-card.full{flex:1 1 100%}
+.chart-svg-holder{min-height:320px}
 h1,h2,h3{font-family:'Fraunces','Georgia',serif;font-weight:600;letter-spacing:-0.01em;line-height:1.12}
 header{padding:78px 0 26px}
 h1{font-size:clamp(34px,6vw,58px)}
@@ -128,7 +129,7 @@ const pDMY=d3.timeParse('%Y-%m-%d'),pYM=d3.timeParse('%Y-%m');
 function T(s){if(typeof s==='number')return new Date(s,11,31);if(/^\d{4}-\d{2}-\d{2}$/.test(s))return pDMY(s);if(/^\d{4}-\d{2}$/.test(s))return pYM(s);if(/^\d{4}$/.test(s))return new Date(+s,11,31);return pDMY(s)||pYM(s);}
 function ym2q(ym){const a=(''+ym).split('-');return a[0]+'-Q'+(Math.floor(((+a[1]||1)-1)/3)+1);}
 function downloadCSV(name,header,rows){const csv=[header.join(',')].concat(rows.map(r=>r.join(','))).join('\n');const b=new Blob([csv],{type:'text/csv'}),u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
-function decades(y){const d=y.domain(),lo=Math.floor(Math.log10(d[0])),hi=Math.ceil(Math.log10(d[1])),tv=[];for(let k=lo;k<=hi;k++){const v=Math.pow(10,k);if(v>=d[0]*0.999&&v<=d[1]*1.001)tv.push(v);}return tv;}
+function decades(y){const d=y.domain();if(!(d[0]>0)||!(d[1]>0))return[];const lo=Math.floor(Math.log10(d[0])),hi=Math.ceil(Math.log10(d[1])),tv=[];for(let k=lo;k<=hi&&tv.length<24;k++){const v=Math.pow(10,k);if(v>=d[0]*0.999&&v<=d[1]*1.001)tv.push(v);}return tv;}
 function gridY(g,y,iw,tv){const a=d3.axisLeft(y).tickSize(-iw).tickFormat('');tv?a.tickValues(tv):a.ticks(5);g.append('g').attr('class','grid-g').call(a).select('.domain').remove();}
 function svgBase(holder,w,h,m){const svg=d3.select(holder).append('svg').attr('width',w).attr('height',h).attr('viewBox',`0 0 ${w} ${h}`).style('max-width','100%').style('height','auto');const g=svg.append('g').attr('transform',`translate(${m.l},${m.t})`);return{svg,g,iw:w-m.l-m.r,ih:h-m.t-m.b};}
 function ylab(g,m,ih,t){if(!t)return;g.append('text').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',-m.l+14).attr('text-anchor','middle').attr('fill','var(--muted)').attr('font-size',11).text(t);}
@@ -139,7 +140,9 @@ function card(grid,s,builder,dl,extra,cls){const c=document.createElement('div')
  c.innerHTML=`<h3>${s.title}</h3><div class="chart-blurb">${s.blurb||''}</div><div class="legend"></div><div class="chart-svg-holder"></div>${extra||''}
    <div class="chart-foot"><span>Source: ${s.source||''} ${live}</span><span><button class="dl">⬇ data</button> &nbsp; <a href="${s.url||'#'}" target="_blank" rel="noopener">source ↗</a></span></div>`;
  grid.appendChild(c);const ho=c.querySelector('.chart-svg-holder'),le=c.querySelector('.legend');c.querySelector('.dl').onclick=dl;
- function draw(){ho.innerHTML='';le.innerHTML='';builder(ho,le,ho.clientWidth||800);}draw();redraws.push(draw);return c;}
+ let drawn=false;function draw(){ho.innerHTML='';le.innerHTML='';builder(ho,le,ho.clientWidth||800);drawn=true;}
+ if('IntersectionObserver'in window){const io=new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){draw();o.unobserve(c);}});},{rootMargin:'300px'});io.observe(c);}else draw();
+ redraws.push(()=>{if(drawn)draw();});return c;}
 function scenNote(scs,head){return `<div class="scen">${head?`<div class="scen-h">${head}</div>`:''}`+scs.map(s=>`<div><b style="color:${s.color}">${s.name}</b> — ${s.note}</div>`).join('')+`</div>`;}
 
 // ===== builders =====
@@ -212,10 +215,10 @@ function stackChart(ho,le,W,cfg){
     g.append('line').attr('x1',x0).attr('x2',x0).attr('y1',0).attr('y2',ih).attr('stroke',b[3]).attr('stroke-dasharray','3 3').attr('opacity',.5);
     g.append('text').attr('x',x0+4).attr('y',13).attr('fill',b[3]).attr('font-size',12.5).attr('font-weight',600).attr('opacity',.92).text(b[0]);});
   cfg.keys.forEach(k=>legendItem(le,PAL[k]||'#999',k));
-  if(cfg.line2){const L=cfg.line2.lines;const av=[].concat(...L.map(l=>l.vals.map(p=>p.value)));
-    const y2=d3.scaleLog().domain([d3.min(av)*0.8,d3.max(av)*1.25]).range([ih,0]);
+  if(cfg.line2){const L=cfg.line2.lines;const av=[].concat(...L.map(l=>l.vals.map(p=>p.value))).filter(v=>v>0);
+    const y2=d3.scaleLog().domain([(d3.min(av)||1)*0.8,(d3.max(av)||10)*1.25]).range([ih,0]);
     g.append('g').attr('class','axis').attr('transform',`translate(${iw},0)`).call(d3.axisRight(y2).tickValues(decades(y2)).tickFormat(d3.format('~s')));
-    L.forEach(l=>{g.append('path').datum(l.vals).attr('d',d3.line().x(d=>x(T(d.date))).y(d=>y2(d.value))).attr('fill','none').attr('stroke',l.color).attr('stroke-width',2.8).attr('stroke-dasharray',l.dashed?'6 4':null);legendItem(le,l.color,l.name);});
+    L.forEach(l=>{g.append('path').datum(l.vals).attr('d',d3.line().defined(d=>d.value>0).x(d=>x(T(d.date))).y(d=>y2(d.value))).attr('fill','none').attr('stroke',l.color).attr('stroke-width',2.8).attr('stroke-dasharray',l.dashed?'6 4':null);legendItem(le,l.color,l.name);});
     g.append('text').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',iw+46).attr('text-anchor','middle').attr('font-size',10.5).attr('fill','#666').text(cfg.line2.axisLabel||'');}
   const focus=g.append('line').attr('y1',0).attr('y2',ih).attr('stroke','#bdb4a6').attr('opacity',0);
   g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
@@ -224,7 +227,7 @@ function stackChart(ho,le,W,cfg){
      tip(`<b>${d3.timeFormat('%b %Y')(d.t)}</b>${rows}`,e);}).on('mouseleave',()=>{untip();focus.attr('opacity',0);});
 }
 function fitLog(pts){const n=pts.length;if(n<2)return null;const xs=pts.map(p=>p.year),ys=pts.map(p=>Math.log10(p.y));const mx=d3.mean(xs),my=d3.mean(ys);let nu=0,de=0;for(let i=0;i<n;i++){nu+=(xs[i]-mx)*(ys[i]-my);de+=(xs[i]-mx)**2;}if(!de)return null;const b=nu/de,a=my-b*mx;return {fn:x=>Math.pow(10,a+b*x),b};}
-function logTicks(y){const d=y.domain(),lo=Math.floor(Math.log10(d[0])),hi=Math.ceil(Math.log10(d[1])),tv=[];for(let k=lo;k<=hi;k++)for(const ml of [1,2,5]){const v=ml*Math.pow(10,k);if(v>=d[0]*0.999&&v<=d[1]*1.001)tv.push(v);}return tv;}
+function logTicks(y){const d=y.domain();if(!(d[0]>0)||!(d[1]>0))return[];const lo=Math.floor(Math.log10(d[0])),hi=Math.ceil(Math.log10(d[1])),tv=[];for(let k=lo;k<=hi&&tv.length<40;k++)for(const ml of [1,2,5]){const v=ml*Math.pow(10,k);if(v>=d[0]*0.999&&v<=d[1]*1.001)tv.push(v);}return tv;}
 function scatterChart(ho,le,W,cfg){
   const m={t:12,r:16,b:28,l:58},h=cfg.big?Math.max(360,Math.min(440,W*0.66)):340,{g,iw,ih}=svgBase(ho,W,h,m);
   const all=[].concat(...cfg.groups.map(gr=>gr.pts.concat(gr.future||[])));
