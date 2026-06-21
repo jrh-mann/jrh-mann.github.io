@@ -346,6 +346,9 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   if(S.cowos_supply){const s=S.cowos_supply;
    card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',unit:'wafers',ylabel:'CoWoS wafers / quarter',big:true,fit:true,fitPerYear:4}),
      ()=>downloadCSV('cowos_production.csv',['quarter','wafers'],s.bars.map(d=>[d.x,d.value])),null,'full');}
+  if(S.tsmc_capex){const s=S.tsmc_capex;
+   card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#2b6c8f',yfmt:'usd',unit:'US$ bn',ylabel:'US$ bn / quarter',big:true}),
+     ()=>downloadCSV('tsmc_capex.csv',['quarter','usd_bn'],s.bars.map(d=>[d.x,d.value])),null,'full');}
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}

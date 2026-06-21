@@ -477,6 +477,29 @@ try:
 except Exception as e:
     print("  WARN us_energy:", e)
 
+# ============================================================ LIVE: TSMC quarterly capex (TWSE cash-flow filings via FinMind)
+try:
+    cj = json.loads(_get("https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockCashFlowsStatement&data_id=2330&start_date=2022-01-01", 40))
+    capm = {r["date"]: -r["value"] for r in cj.get("data", []) if r["type"] == "PropertyAndPlantAndEquipment"}
+    cbars = []
+    for dt in sorted(capm):
+        y, mo = dt[:4], int(dt[5:7]); q = (mo - 1) // 3 + 1
+        if q == 1:
+            qv = capm[dt]
+        else:
+            prev = [capm[k] for k in capm if k[:4] == y and (int(k[5:7]) - 1) // 3 + 1 == q - 1]
+            qv = capm[dt] - (prev[0] if prev else 0)
+        cbars.append({"x": f"{y} Q{q}", "value": round(qv / 1e9 / 31, 2)})
+    if len(cbars) >= 8:
+        series["tsmc_capex"] = {"title": "TSMC capex — the money behind the bottleneck", "unit": "US$ bn / quarter", "yfmt": "usd",
+            "blurb": "TSMC capital spending per quarter — the spend that builds CoWoS and fab capacity. Flat through the 2023–24 downcycle, then an AI-driven ramp from late-2024. With a ~2-year lead from spend to wafers, capex leads the CoWoS curve. Filed quarterly with the TWSE.",
+            "source": "TSMC consolidated cash flow ('acquisition of PP&E', TWSE filings via FinMind), de-cumulated from YTD; NT$~31/US$", "url": "https://mops.twse.com.tw",
+            "bars": cbars}
+        live["tsmc_capex"] = True
+        cache("tsmc_capex.csv", [{"quarter": b["x"], "usd_bn": b["value"]} for b in cbars])
+except Exception as e:
+    print("  WARN tsmc_capex:", e)
+
 # ============================================================ buildout model constants (Epoch-derived)
 try:
     anchor_h = hist[-1]["median"]                       # end-2025 installed H100e
@@ -491,7 +514,7 @@ try:
     cbars = [{"x": _qof(r["Start date"]), "value": round(num(r["CoWoS supply (median)"]))} for r in sd if num(r.get("CoWoS supply (median)"))]
     if cbars:
         series["cowos_supply"] = {"title": "CoWoS packaging production — the binding bottleneck", "unit": "wafers / quarter", "yfmt": "num",
-            "blurb": "Global CoWoS output (TSMC ~90%+). It's all immediately consumed by AI accelerators, so production — and its growth rate — is the real constraint. Roughly doubling per year, but the YoY rate is decelerating while demand wants far more.",
+            "blurb": "Global CoWoS output (TSMC ~90%+), all immediately consumed by AI. NB: Epoch interpolates this between just two annual analyst anchors (SemiWiki/TrendForce: ~37k→70k wafers/mo, end-2024→end-2025), so the quarterly smoothness is interpolation — the real signal is the ~1.9×/yr growth between two points.",
             "source": "Epoch AI — AI Chip Components (CC-BY)", "url": "https://epoch.ai/data/ai-chip-production-index",
             "bars": cbars}
         live["cowos_supply"] = True
