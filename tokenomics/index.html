@@ -287,7 +287,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note),'big');}
   {const s=S.compute_by_source;const last=s.rows[s.rows.length-1].date;
    const yrn=ds=>{const d=new Date(ds);return d.getFullYear()+d.getMonth()/12;};
-   const fdates=[];for(let y=2026;y<=2028;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
+   const fdates=[];for(let y=2026;y<=2027;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
    const frows=fdates.map(fd=>{const row={date:fd};s.stack.forEach(k=>{const pts=s.rows.filter(r=>r[k]>0).map(r=>({year:yrn(r.date),y:r[k]}));const f=pts.length>1?fitLog(pts):null;row[k]=f?Math.max(0,+f.fn(yrn(fd)).toFixed(3)):0;});return row;});
    const allrows=s.rows.concat(frows);
    card(g1,s,(ho,le,W)=>stackChart(ho,le,W,{rows:allrows,keys:s.stack,yfmt:'num',ylabel:'million H100e (cumulative)',splitDate:last,big:true}),
@@ -317,6 +317,26 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}
+  // NVIDIA ramp model — interactive Blackwell->Rubin transition
+  {const NP=S.nvidia_production;const hist=NP.rows;const lastT=hist[hist.length-1];
+   const total=['Ampere','Hopper','Blackwell'].reduce((a,k)=>a+(lastT[k]||0),0);const lastDate=lastT.date;
+   const rc=document.createElement('div');rc.className='chart-card full';
+   rc.innerHTML=`<h3>NVIDIA generation ramp — model the transition</h3><div class="chart-blurb">Total quarterly output is ~capacity-bound (roughly known); the unknowns are <b>when Rubin ramps</b> and <b>how fast</b>. Twizzle them.</div>
+     <div class="knobs" id="rknobs"></div><div class="legend" id="rlegend"></div><div class="chart-svg-holder" id="rchart"></div>
+     <div class="chart-foot"><span>History: Epoch estimates. Future: logistic Blackwell→Rubin transition at constant total output.</span></div>`;
+   g3.appendChild(rc);
+   const rknobs=[{id:'start',label:'Rubin ramp starts',min:0,max:8,step:1,val:2,fmt:v=>'Q+'+v},{id:'slope',label:'Ramp speed (q, 10→90%)',min:2,max:12,step:1,val:5,fmt:v=>v+'q'}];
+   const rkw=rc.querySelector('#rknobs');
+   rknobs.forEach(k=>{const d=document.createElement('label');d.className='knob';d.innerHTML=`${k.label}: <span class="kv" id="rkv_${k.id}"></span><input type="range" id="rkn_${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${k.val}">`;rkw.appendChild(d);d.querySelector('input').addEventListener('input',renderR);});
+   function rkn(id){return +document.getElementById('rkn_'+id).value;}
+   function renderR(){const start=rkn('start'),slope=rkn('slope');rknobs.forEach(k=>document.getElementById('rkv_'+k.id).textContent=k.fmt(rkn(k.id)));
+     const fdates=[];for(let y=2026;y<=2028;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
+     const kk=Math.log(81)/slope,qmid=start+slope/2;
+     const frows=fdates.map((fd,i)=>{const sh=1/(1+Math.exp(-kk*(i-qmid)));return{date:fd,Ampere:0,Hopper:0,Blackwell:total*(1-sh),Rubin:total*sh};});
+     const rows=hist.map(r=>({...r,Rubin:0})).concat(frows);
+     const rh=rc.querySelector('#rchart'),rl=rc.querySelector('#rlegend');rh.innerHTML='';rl.innerHTML='';
+     stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true});}
+   renderR();}
 
   // 4 — memory
   let g4=section('s4','04 · memory','HBM — the memory bottleneck','No one discloses a clean HBM revenue number, so we triangulate: Micron’s data-centre segment (best primary numeric proxy) and the boom at the market leader, SK Hynix.');
@@ -345,6 +365,9 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   {const s=S.odm_revenue;const lines=Object.entries(s.lines).map(([k,v])=>({name:k,color:PAL[k]||'#888',cls:k,vals:v.map(d=>({t:T(d.date),y:d.value})),dots:false}));
    card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',bands:ERAS,lines}),
      ()=>{const names=Object.keys(s.lines),base=s.lines[names[0]];downloadCSV('odm_revenue.csv',['month',...names],base.map((d,i)=>[d.date,...names.map(n=>s.lines[n][i]?.value)]));});}
+
+  if(S.korea_memory){const s=S.korea_memory;card(g6,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#b2453a',yfmt:'usd',ylabel:'US$ bn / year',unit:'B'}),
+     ()=>downloadCSV('korea_memory.csv',['year','usd_bn'],s.bars.map(b=>[b.x,b.value])));}
 
   // 7 — interactive buildout model
   if(S.buildout){const B=S.buildout;

@@ -422,6 +422,30 @@ except Exception as e:
         "points": [{"x": x["quarter"], "revenue": num(x["revenue_krw_t"]), "margin": num(x["op_margin_pct"])} for x in r]}
     live["skhynix"] = False
 
+# ============================================================ LIVE: Korea memory exports (UN Comtrade)
+try:
+    ku = ("https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=410"
+          "&period=2017,2018,2019,2020,2021,2022,2023,2024,2025&cmdCode=854232&flowCode=X&partnerCode=0")
+    kd = json.loads(_get(ku, 90)).get("data", [])
+    krows = sorted((r["refYear"], r.get("primaryValue", 0)) for r in kd if r.get("partnerCode") == 0)
+    if krows:
+        series["korea_memory"] = {"title": "Korea memory-chip exports", "unit": "US$ billions / year", "yfmt": "usd",
+            "blurb": "Korea (SK Hynix + Samsung ≈ 70% of global DRAM/HBM) memory-IC exports — a customs-verified, near-real-time proxy for the memory & HBM boom.",
+            "source": "UN Comtrade (Korea exports, HS 854232 'memories')", "url": "https://comtradeplus.un.org",
+            "bars": [{"x": str(y), "value": round(v / 1e9, 1)} for y, v in krows]}
+        live["korea_memory"] = True
+        cache("korea_memory.csv", [{"year": y, "usd": int(v)} for y, v in krows])
+except Exception as e:
+    print("  WARN korea_memory:", e)
+    try:
+        r = read_static("korea_memory.csv")
+        series["korea_memory"] = {"title": "Korea memory-chip exports", "unit": "US$ billions / year", "yfmt": "usd",
+            "blurb": "Korea (SK Hynix + Samsung ≈ 70% of global DRAM/HBM) memory-IC exports — proxy for the memory & HBM boom.",
+            "source": "UN Comtrade (HS 854232), bundled", "url": "https://comtradeplus.un.org",
+            "bars": [{"x": x["year"], "value": round(num(x["usd"]) / 1e9, 1)} for x in r]}
+        live["korea_memory"] = False
+    except Exception: pass
+
 # ============================================================ buildout model constants (Epoch-derived)
 try:
     anchor_h = hist[-1]["median"]                       # end-2025 installed H100e
