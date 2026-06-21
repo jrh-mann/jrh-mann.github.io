@@ -500,6 +500,26 @@ try:
 except Exception as e:
     print("  WARN tsmc_capex:", e)
 
+# ============================================================ LIVE: TSMC fab-construction contractors (leading capacity signal, FinMind)
+try:
+    fcm = {}
+    for sid in ("2404", "6196", "6691"):  # UIS, Marketech, Yankey
+        fj = json.loads(_get(f"https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&data_id={sid}&start_date=2021-01-01", 40))
+        for r in fj.get("data", []):
+            dt = (r.get("date", "")[:7]) or f"{r.get('revenue_year')}-{int(r.get('revenue_month', 0)):02d}"
+            if r.get("revenue"): fcm[dt] = fcm.get(dt, 0) + r["revenue"] / 1e9 / 31
+    fmonths = sorted(fcm)
+    t12 = [{"date": fmonths[i] + "-15", "value": round(sum(fcm[fmonths[k]] for k in range(i - 11, i + 1)), 2)} for i in range(11, len(fmonths))]
+    if len(t12) >= 6:
+        series["fab_construction"] = {"title": "TSMC fab-construction contractors — a leading capacity signal", "yfmt": "usd", "unit": "US$ bn (trailing 12-mo)",
+            "blurb": "Combined revenue of TSMC's cleanroom/facilities builders (UIS, Marketech, Yankey), trailing-12-month. They pour concrete ~1–2 years before a fab runs, so this leads new fab & CoWoS capacity. Monthly TWSE filings (~10-day lag) — the freshest signal here. NB: spans TSMC's global builds (Taiwan + Arizona + Japan), not Taiwan-only.",
+            "source": "Monthly revenue, TWSE filings via FinMind (NT$~31/US$), trailing-12-month", "url": "https://mops.twse.com.tw",
+            "history": t12}
+        live["fab_construction"] = True
+        cache("fab_construction.csv", [{"date": d["date"], "usd_bn": d["value"]} for d in t12])
+except Exception as e:
+    print("  WARN fab_construction:", e)
+
 # ============================================================ buildout model constants (Epoch-derived)
 try:
     anchor_h = hist[-1]["median"]                       # end-2025 installed H100e
