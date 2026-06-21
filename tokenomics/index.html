@@ -196,7 +196,7 @@ function stackChart(ho,le,W,cfg){
   g.selectAll('path.l').data(stk).join('path').attr('class','l').attr('d',area).attr('fill',d=>PAL[d.key]||'#999').attr('opacity',.9);
   if(cfg.splitDate){const xs=x(T(cfg.splitDate));g.append('rect').attr('x',xs).attr('y',0).attr('width',Math.max(0,iw-xs)).attr('height',ih).attr('fill','#faf8f3').attr('opacity',.12);
     g.append('line').attr('x1',xs).attr('x2',xs).attr('y1',0).attr('y2',ih).attr('stroke','#1d1c1a').attr('stroke-dasharray','4 3').attr('opacity',.55);
-    g.append('text').attr('x',xs+5).attr('y',ih-6).attr('font-size',10.5).attr('fill','#666').attr('font-style','italic').text('forecast →');}
+    g.append('text').attr('x',xs+5).attr('y',13).attr('font-size',10.5).attr('fill','#666').attr('font-style','italic').text('forecast →');}
   if(cfg.bands)cfg.bands.forEach(b=>{const x0=Math.max(0,x(T(b[1])));if(x0<0||x0>iw)return;
     g.append('line').attr('x1',x0).attr('x2',x0).attr('y1',0).attr('y2',ih).attr('stroke',b[3]).attr('stroke-dasharray','3 3').attr('opacity',.5);
     g.append('text').attr('x',x0+4).attr('y',13).attr('fill',b[3]).attr('font-size',12.5).attr('font-weight',600).attr('opacity',.92).text(b[0]);});
@@ -325,22 +325,27 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}
-  // NVIDIA ramp model — interactive Blackwell->Rubin transition
+  // NVIDIA ramp model — total bounded by CoWoS supply (the binding input), Rubin heavier per chip
   {const NP=S.nvidia_production;const hist=NP.rows;const lastT=hist[hist.length-1];
    const total=['Ampere','Hopper','Blackwell'].reduce((a,k)=>a+(lastT[k]||0),0);const lastDate=lastT.date;
+   const cpcB=1.0,cpcR=1.8; // Rubin consumes ~1.8x the CoWoS area per chip vs Blackwell
    const rc=document.createElement('div');rc.className='chart-card full';
-   rc.innerHTML=`<h3>NVIDIA generation ramp — model the transition</h3><div class="chart-blurb">Total quarterly output is ~capacity-bound (roughly known); the unknowns are <b>when Rubin ramps</b> and <b>how fast</b>. Twizzle them.</div>
+   rc.innerHTML=`<h3>NVIDIA generation ramp — bounded by CoWoS supply</h3><div class="chart-blurb">Total output isn't fixed — it's set by NVIDIA's binding input, <b>CoWoS packaging</b>, which grows over time. Rubin uses ~1.8× the CoWoS area per chip, so as it ramps, chip <i>count</i> grows slower than compute does. Twizzle CoWoS growth and the Rubin ramp.</div>
      <div class="knobs" id="rknobs"></div><div class="legend" id="rlegend"></div><div class="chart-svg-holder" id="rchart"></div>
-     <div class="chart-foot"><span>History: Epoch estimates. Future: logistic Blackwell→Rubin transition at constant total output.</span></div>`;
+     <div class="chart-foot"><span>History: Epoch. Future: chips = CoWoS supply ÷ CoWoS-per-chip; Rubin ≈ 1.8× Blackwell packaging area.</span></div>`;
    g3.appendChild(rc);
-   const rknobs=[{id:'start',label:'Rubin ramp starts',min:0,max:8,step:1,val:2,fmt:v=>'Q+'+v},{id:'slope',label:'Ramp speed (q, 10→90%)',min:2,max:12,step:1,val:5,fmt:v=>v+'q'}];
+   const rknobs=[{id:'cowos',label:'CoWoS supply growth',min:1.2,max:3.0,step:0.1,val:1.8,fmt:v=>v.toFixed(1)+'×/yr'},
+     {id:'start',label:'Rubin ramp starts',min:0,max:8,step:1,val:2,fmt:v=>'Q+'+v},
+     {id:'slope',label:'Ramp speed (q,10→90%)',min:2,max:12,step:1,val:5,fmt:v=>v+'q'}];
    const rkw=rc.querySelector('#rknobs');
    rknobs.forEach(k=>{const d=document.createElement('label');d.className='knob';d.innerHTML=`${k.label}: <span class="kv" id="rkv_${k.id}"></span><input type="range" id="rkn_${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${k.val}">`;rkw.appendChild(d);d.querySelector('input').addEventListener('input',renderR);});
    function rkn(id){return +document.getElementById('rkn_'+id).value;}
-   function renderR(){const start=rkn('start'),slope=rkn('slope');rknobs.forEach(k=>document.getElementById('rkv_'+k.id).textContent=k.fmt(rkn(k.id)));
+   function renderR(){const cg=rkn('cowos'),start=rkn('start'),slope=rkn('slope');rknobs.forEach(k=>document.getElementById('rkv_'+k.id).textContent=k.fmt(rkn(k.id)));
      const fdates=[];for(let y=2026;y<=2028;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
      const kk=Math.log(81)/slope,qmid=start+slope/2;
-     const frows=fdates.map((fd,i)=>{const sh=1/(1+Math.exp(-kk*(i-qmid)));return{date:fd,Ampere:0,Hopper:0,Blackwell:total*(1-sh),Rubin:total*sh};});
+     const frows=fdates.map((fd,i)=>{const dt=(i+1)/4;const sh=1/(1+Math.exp(-kk*(i-qmid)));
+       const cpc=(1-sh)*cpcB+sh*cpcR;const cowos=total*cpcB*Math.pow(cg,dt);const tot=cowos/cpc;
+       return{date:fd,Ampere:0,Hopper:0,Blackwell:tot*(1-sh),Rubin:tot*sh};});
      const rows=hist.map(r=>({...r,Rubin:0})).concat(frows);
      const rh=rc.querySelector('#rchart'),rl=rc.querySelector('#rlegend');rh.innerHTML='';rl.innerHTML='';
      stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true});}

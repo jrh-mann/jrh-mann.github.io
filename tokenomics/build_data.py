@@ -459,12 +459,15 @@ try:
         usgen = [{"date": r["period"] + "-15", "value": round(num(r["generation"]) / 1000, 2)} for r in g if num(r.get("generation"))]
         dd = eia("electricity/retail-sales", [("frequency", "monthly"), ("data[0]", "sales"), ("facets[stateid][]", "US"), ("facets[sectorid][]", "ALL"), ("start", "2008-01"), ("sort[0][column]", "period"), ("sort[0][direction]", "asc"), ("length", "5000")])
         usdem = [{"date": r["period"] + "-15", "value": round(num(r["sales"]) / 1000, 2)} for r in dd if num(r.get("sales"))]
-        if usgen: freq, src = "monthly", "EIA — electric-power-operational-data (generation) + retail-sales (demand), monthly"
+        if usgen: freq, src = "monthly", "EIA — electric-power-operational-data (generation) + retail-sales (demand), 12-mo trailing"
     if not usgen:
         oc = list(csv.DictReader(io.StringIO(_get("https://ourworldindata.org/grapher/electricity-generation.csv?country=~USA", 60))))
         vcol = [c for c in oc[0] if c not in ("Entity", "Code", "Year")][0]
         usgen = [{"date": r["Year"] + "-12-31", "value": round(num(r[vcol]), 1)} for r in oc if r.get("Code") == "USA" and num(r.get(vcol)) and int(r["Year"]) >= 1995]
-    mfac = 0.730 if freq == "monthly" else 8.76; per = "month" if freq == "monthly" else "year"
+    def roll12(a): return [{"date": a[i]["date"], "value": round(sum(a[i - 11 + k]["value"] for k in range(12)), 1)} for i in range(11, len(a))]
+    if freq == "monthly":
+        usgen = roll12(usgen); usdem = roll12(usdem) if usdem else []
+    mfac = 8.76; per = "year (12-mo trailing)" if freq == "monthly" else "year"
     aih = [{"date": d["date"][:4] + "-12-15", "value": round(d["facility_gw"] * mfac, 2)} for d in fp["history"] if d["date"][5:7] == "12"]
     aip = [{"date": str(d["year"]) + "-12-15", "value": round(d["value"] * mfac, 2)} for d in fp["projection"][sckey]]
     series["us_energy"] = {"title": "US electricity: generation, demand & AI", "unit": f"TWh / {per}", "yfmt": "num", "ylabel": f"TWh per {per} (log)",
