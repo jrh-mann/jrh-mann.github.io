@@ -509,12 +509,12 @@ try:
             dt = (r.get("date", "")[:7]) or f"{r.get('revenue_year')}-{int(r.get('revenue_month', 0)):02d}"
             if r.get("revenue"): fcm[dt] = fcm.get(dt, 0) + r["revenue"] / 1e9 / 31
     fmonths = sorted(fcm)
-    t12 = [{"date": fmonths[i] + "-15", "value": round(sum(fcm[fmonths[k]] for k in range(i - 11, i + 1)), 2)} for i in range(11, len(fmonths))]
-    if len(t12) >= 6:
-        series["fab_construction"] = {"title": "TSMC fab-construction contractors — a leading capacity signal", "yfmt": "usd", "unit": "US$ bn (trailing 12-mo)",
-            "blurb": "Combined revenue of TSMC's cleanroom/facilities builders (UIS, Marketech, Yankey), trailing-12-month. They pour concrete ~1–2 years before a fab runs, so this leads new fab & CoWoS capacity. Monthly TWSE filings (~10-day lag) — the freshest signal here. NB: spans TSMC's global builds (Taiwan + Arizona + Japan), not Taiwan-only.",
-            "source": "Monthly revenue, TWSE filings via FinMind (NT$~31/US$), trailing-12-month", "url": "https://mops.twse.com.tw",
-            "history": t12}
+    t3 = [{"date": fmonths[i] + "-15", "value": round(sum(fcm[fmonths[k]] for k in range(i - 2, i + 1)) / 3, 3)} for i in range(2, len(fmonths))]
+    if len(t3) >= 6:
+        series["fab_construction"] = {"title": "TSMC fab-construction contractors — a leading capacity signal", "yfmt": "usd", "unit": "US$ bn / month (3-mo avg)",
+            "blurb": "Combined revenue of TSMC's cleanroom/facilities builders (UIS, Marketech, Yankey), 3-month average to cut project lumpiness while staying timely. They pour concrete ~1–2 years before a fab runs, so this leads new fab & CoWoS capacity. Monthly TWSE/MOPS filings (~10-day lag) — the freshest feed here. NB: spans TSMC's global builds (Taiwan + Arizona + Japan), not Taiwan-only.",
+            "source": "Monthly revenue, TWSE/MOPS filings via FinMind (NT$~31/US$), 3-month average", "url": "https://mops.twse.com.tw",
+            "history": t3}
         live["fab_construction"] = True
         cache("fab_construction.csv", [{"date": d["date"], "usd_bn": d["value"]} for d in t12])
 except Exception as e:
