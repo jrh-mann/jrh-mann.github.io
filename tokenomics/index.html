@@ -219,7 +219,7 @@ function comboChart(ho,le,W,cfg){
   g.append('path').datum(cfg.line).attr('d',ln).attr('fill','none').attr('stroke',cfg.lineColor||'#1f4e6b').attr('stroke-width',2.4);
   g.selectAll('circle.m').data(cfg.line).join('circle').attr('class','m').attr('cx',d=>x(d.x)+x.bandwidth()/2).attr('cy',d=>yR(d.value)).attr('r',3).attr('fill',cfg.lineColor||'#1f4e6b')
    .on('mousemove',(e,d)=>tip(`<b>${d.x}</b><br>Operating margin: ${fmt(d.value,'num')}%`,e)).on('mouseleave',untip);
-  legendItem(le,cfg.barColor||'#d3873f','Revenue (KRW trn)');legendItem(le,cfg.lineColor||'#1f4e6b','Operating margin (%)');
+  legendItem(le,cfg.barColor||'#d3873f','Revenue ('+(cfg.barUnit||'')+')');legendItem(le,cfg.lineColor||'#1f4e6b','Operating margin (%)');
 }
 
 // ===== load & render =====
@@ -279,7 +279,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   let g4=section('s4','04 · memory','HBM — the memory bottleneck','No one discloses a clean HBM revenue number, so we triangulate: Micron’s data-centre segment (best primary numeric proxy) and the boom at the market leader, SK Hynix.');
   {const s=S.micron_cmbu;card(g4,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.points.map(p=>({x:p.date,value:p.value})),color:'#7a3b9a',yfmt:'usd',ylabel:'US$ bn / quarter'}),
      ()=>downloadCSV('micron_cmbu.csv',['quarter','usd_bn'],s.points.map(p=>[p.date,p.value])));}
-  {const s=S.skhynix;card(g4,s,(ho,le,W)=>comboChart(ho,le,W,{bars:s.points.map(p=>({x:p.x,value:p.revenue})),line:s.points.map(p=>({x:p.x,value:p.margin})),barUnit:'KRW trn',ylabel:'KRW trillions',barColor:'#d3873f',lineColor:'#1f4e6b'}),
+  {const s=S.skhynix;card(g4,s,(ho,le,W)=>comboChart(ho,le,W,{bars:s.points.map(p=>({x:p.x,value:p.revenue})),line:s.points.map(p=>({x:p.x,value:p.margin})),barUnit:'US$ bn',ylabel:'US$ billions',barColor:'#d3873f',lineColor:'#1f4e6b'}),
      ()=>downloadCSV('skhynix.csv',['quarter','revenue_krw_trn','op_margin_pct'],s.points.map(p=>[p.x,p.revenue,p.margin])));}
 
   // 5 — foundry
@@ -295,8 +295,8 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   let g6=section('s6','06 · what to watch','The leading edge','Official chip data lags a quarter; these fire earlier. NVIDIA’s forward commitments lead by quarters; TSMC and the Taiwan AI-server makers report monthly (live).');
   {const s=S.nvidia_commitments;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',ylabel:'US$ billions',lines:[{name:'Supply commitments',color:'#4e9a51',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a'}]}),
      ()=>downloadCSV('nvidia_commitments.csv',['date','usd_bn'],s.points.map(d=>[d.date,d.value])));}
-  if(S.tsmc_monthly){const s=S.tsmc_monthly;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',lines:[{name:'TSMC monthly revenue',color:'#2b6c8f',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a',dots:false}]}),
-     ()=>downloadCSV('tsmc_monthly.csv',['month','ntd_bn'],s.points.map(d=>[d.date,d.value])));}
+  if(S.tsmc_monthly){const s=S.tsmc_monthly;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',ylabel:'US$ billions / month',bands:ERAS,lines:[{name:'TSMC monthly revenue',color:'#2b6c8f',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a',dots:false}]}),
+     ()=>downloadCSV('tsmc_monthly.csv',['month','usd_bn'],s.points.map(d=>[d.date,d.value])));}
   {const s=S.odm_revenue;const lines=Object.entries(s.lines).map(([k,v])=>({name:k,color:PAL[k]||'#888',cls:k,vals:v.map(d=>({t:T(d.date),y:d.value})),dots:false}));
    card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',bands:ERAS,lines}),
      ()=>{const names=Object.keys(s.lines),base=s.lines[names[0]];downloadCSV('odm_revenue.csv',['month',...names],base.map((d,i)=>[d.date,...names.map(n=>s.lines[n][i]?.value)]));});}

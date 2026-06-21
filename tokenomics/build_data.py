@@ -211,10 +211,10 @@ def finmind(sid):
     return sorted({(x["revenue_year"], x["revenue_month"]): x["revenue"] for x in d}.items())
 try:
     pts = finmind("2330")
-    series["tsmc_monthly"] = {"title": "TSMC monthly revenue", "unit": "NT$ billions / month", "yfmt": "num",
-        "blurb": "The foundry's monthly revenue (reported ~the 10th) — the highest-frequency public read on AI-chip demand.",
+    series["tsmc_monthly"] = {"title": "TSMC monthly revenue", "unit": "US$ billions / month", "yfmt": "usd",
+        "blurb": "The foundry's monthly revenue (reported ~the 10th) — the highest-frequency public read on AI-chip demand. Converted to US$ (~31 NT$/US$).",
         "source": "TWSE monthly revenue via FinMind (2330)", "url": "https://finmindtrade.com",
-        "points": [{"date": f"{y}-{m:02d}", "value": v / 1e9} for (y, m), v in pts]}
+        "points": [{"date": f"{y}-{m:02d}", "value": round(v / 1e9 / 31, 2)} for (y, m), v in pts]}
     live["tsmc_monthly"] = True
 except Exception as e:
     print("  WARN tsmc_monthly:", e)
@@ -380,10 +380,10 @@ try:
     for dt in sorted(rev_d):
         if dt in op_d and rev_d[dt]:
             q = f"{dt[:4]}-Q{(int(dt[5:7]) - 1)//3 + 1}"
-            pts.append({"x": q, "revenue": round(rev_d[dt] / 1e12, 1), "margin": round(op_d[dt] / rev_d[dt] * 100, 1)})
+            pts.append({"x": q, "revenue": round(rev_d[dt] / 1e9 / 1350, 1), "margin": round(op_d[dt] / rev_d[dt] * 100, 1)})
     if len(pts) < 4: raise ValueError("too few SK Hynix points")
-    series["skhynix"] = {"title": "SK Hynix — the HBM leader", "unit": "KRW trn (rev) / % (margin)", "yfmt": "num",
-        "blurb": "World #1 HBM maker (~62% share, ~70% of Rubin HBM4).",
+    series["skhynix"] = {"title": "SK Hynix — the HBM leader", "unit": "US$ bn (rev) / % (margin)", "yfmt": "num",
+        "blurb": "World #1 HBM maker (~62% share, ~70% of Rubin HBM4). Revenue converted to US$ (~1,350 ₩/US$).",
         "source": "SK Hynix quarterly financials via Yahoo Finance (000660.KS)", "url": "https://finance.yahoo.com/quote/000660.KS",
         "points": pts}
     live["skhynix"] = True
