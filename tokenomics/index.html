@@ -323,7 +323,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   ];
   const flow=document.getElementById('flow');
   flowDef.forEach((n,i)=>{const el=document.createElement('div');el.className='node';
-    el.innerHTML=`<div class="nlab">${n[0]}</div><div class="nsub">${n[1]}</div><div class="nstat">${n[2]()}</div>${i<flowDef.length-1?'<div class="narrow">→</div>':''}`;
+    el.innerHTML=`<div class="nlab">${n[0]}</div><div class="nsub">${n[1]}</div><div class="nstat">${typeof n[2]==='function'?n[2]():n[2]}</div>${i<flowDef.length-1?'<div class="narrow">→</div>':''}`;
     el.onclick=()=>document.querySelector(n[3]).scrollIntoView({behavior:'smooth',block:'center'});
     flow.appendChild(el);});
   const consDef=[['EUV lithography','One maker (ASML) → one optics supplier (Zeiss). ~'+S.euv_units.bars.at(-1).value+' machines/yr.','#euv_units'],
