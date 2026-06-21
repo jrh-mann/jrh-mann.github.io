@@ -212,11 +212,11 @@ function stackChart(ho,le,W,cfg){
     g.append('line').attr('x1',x0).attr('x2',x0).attr('y1',0).attr('y2',ih).attr('stroke',b[3]).attr('stroke-dasharray','3 3').attr('opacity',.5);
     g.append('text').attr('x',x0+4).attr('y',13).attr('fill',b[3]).attr('font-size',12.5).attr('font-weight',600).attr('opacity',.92).text(b[0]);});
   cfg.keys.forEach(k=>legendItem(le,PAL[k]||'#999',k));
-  if(cfg.line2){const v=cfg.line2.vals;const y2=d3.scaleLog().domain([d3.min(v,d=>d.value)*0.8,d3.max(v,d=>d.value)*1.25]).range([ih,0]);
-    g.append('g').attr('class','axis').attr('transform',`translate(${iw},0)`).call(d3.axisRight(y2).tickValues(decades(y2)).tickFormat(d3.format('~g')));
-    g.append('path').datum(v).attr('d',d3.line().x(d=>x(T(d.date))).y(d=>y2(d.value))).attr('fill','none').attr('stroke',cfg.line2.color).attr('stroke-width',2.8);
-    g.append('text').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',iw+46).attr('text-anchor','middle').attr('font-size',10.5).attr('fill','#666').text(cfg.line2.axisLabel||'');
-    legendItem(le,cfg.line2.color,cfg.line2.name);}
+  if(cfg.line2){const L=cfg.line2.lines;const av=[].concat(...L.map(l=>l.vals.map(p=>p.value)));
+    const y2=d3.scaleLog().domain([d3.min(av)*0.8,d3.max(av)*1.25]).range([ih,0]);
+    g.append('g').attr('class','axis').attr('transform',`translate(${iw},0)`).call(d3.axisRight(y2).tickValues(decades(y2)).tickFormat(d3.format('~s')));
+    L.forEach(l=>{g.append('path').datum(l.vals).attr('d',d3.line().x(d=>x(T(d.date))).y(d=>y2(d.value))).attr('fill','none').attr('stroke',l.color).attr('stroke-width',2.8).attr('stroke-dasharray',l.dashed?'6 4':null);legendItem(le,l.color,l.name);});
+    g.append('text').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',iw+46).attr('text-anchor','middle').attr('font-size',10.5).attr('fill','#666').text(cfg.line2.axisLabel||'');}
   const focus=g.append('line').attr('y1',0).attr('y2',ih).attr('stroke','#bdb4a6').attr('opacity',0);
   g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
    .on('mousemove',function(e){const mx=d3.pointer(e,this)[0],t0=x.invert(mx),i=d3.bisector(d=>d.t).left(data,t0),d=data[Math.min(i,data.length-1)];focus.attr('x1',x(d.t)).attr('x2',x(d.t)).attr('opacity',1);
@@ -369,9 +369,10 @@ fetch('data.json').then(r=>r.json()).then(D=>{
        return{date:fd,Ampere:0,Hopper:0,Blackwell:tot*(1-sh),Rubin:tot*sh};});
      const rows=hist.map(r=>({...r,Rubin:0})).concat(frows);
      const HF={Ampere:0.3,Hopper:1,Blackwell:2.5,Rubin:5};
-     const line2=rows.map(r=>({date:r.date,value:Object.keys(HF).reduce((a,k)=>a+(r[k]||0)*HF[k],0)}));
+     const flow=rows.map(r=>({date:r.date,value:+Object.keys(HF).reduce((a,k)=>a+(r[k]||0)*HF[k],0).toFixed(2)}));
+     let cum=0;const cumul=flow.map(d=>({date:d.date,value:+(cum+=d.value).toFixed(1)}));
      const rh=rc.querySelector('#rchart'),rl=rc.querySelector('#rlegend');rh.innerHTML='';rl.innerHTML='';
-     stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true,line2:{name:'Total compute (H100e, right axis)',color:'#1d1c1a',vals:line2,axisLabel:'M H100e / q (log)'}});}
+     stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true,line2:{axisLabel:'M H100e (log, right)',lines:[{name:'H100e / quarter',color:'#1d1c1a',vals:flow},{name:'Cumulative H100e (installed)',color:'#7a3b9a',vals:cumul}]}});}
    renderR();}
 
   // 4 — memory
