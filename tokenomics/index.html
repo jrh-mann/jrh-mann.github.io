@@ -306,17 +306,10 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   {const s=S.fleet_power;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,big:true,yloMul:0.07,ylabel:'GW, facility (log)',refs:s.refs,lines:projLines(s,'facility_gw','Facility power','#1d1c1a')}),
      ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note),'big');}
   if(S.us_energy){const s=S.us_energy;
-   const usByYear={};s.us_gen.forEach(d=>{usByYear[d.date.slice(0,4)]=d.value;});
-   const lastUSy=Math.max(...Object.keys(usByYear).map(Number)),lastUSv=usByYear[lastUSy];
-   const usAt=y=>usByYear[y]!=null?usByYear[y]:lastUSv*Math.pow(1.025,y-lastUSy);
-   const pctH=s.ai_hist.map(d=>({t:T(d.date),y:+(d.value/usAt(+d.date.slice(0,4))*100).toFixed(2)}));
-   const lastP=s.ai_hist[s.ai_hist.length-1];
-   const pctP=[lastP].concat(s.ai_proj).map(d=>({t:T(d.date),y:+(d.value/usAt(+d.date.slice(0,4))*100).toFixed(2)}));
    const lines=[{name:'US total generation',color:'#1d1c1a',w:3.2,vals:s.us_gen.map(d=>({t:T(d.date),y:d.value}))}];
-   if(s.us_demand&&s.us_demand.length)lines.push({name:'US demand',color:'#3a7ca5',w:2,vals:s.us_demand.map(d=>({t:T(d.date),y:d.value}))});
-   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',big:true,ylabel:'TWh per year',lines,
-     r2lines:[{name:'Global AI power ÷ US grid',color:'#b2453a',w:2.8,vals:pctH},{name:'scenario',color:'#b2453a',dashed:true,vals:pctP}],r2label:'global AI power as % of US generation'}),
-     ()=>downloadCSV('us_energy.csv',['date','us_twh','ai_pct_of_grid'],s.ai_hist.map(d=>[d.date,usAt(+d.date.slice(0,4)),(d.value/usAt(+d.date.slice(0,4))*100).toFixed(2)])),null,'big');}
+   if(s.us_demand&&s.us_demand.length)lines.push({name:'US demand',color:'#3a7ca5',w:2.4,vals:s.us_demand.map(d=>({t:T(d.date),y:d.value}))});
+   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',big:true,ylabel:'TWh per year',lines}),
+     ()=>downloadCSV('us_energy.csv',['date','us_twh'],s.us_gen.map(d=>[d.date,d.value])),null,'big');}
   {const s=S.compute_by_source;const last=s.rows[s.rows.length-1].date;
    const yrn=ds=>{const d=new Date(ds);return d.getFullYear()+d.getMonth()/12;};
    const fdates=[];for(let y=2026;y<=2027;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
@@ -344,8 +337,8 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('ai_component_share.csv',['date','cowos','hbm','logic'],s.lines['CoWoS packaging'].map((d,i)=>[d.date,d.value,s.lines['HBM memory'][i].value,s.lines['Advanced logic wafers'][i].value])));}
   {const s=S.euv_units;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'systems / year',unit:'systems'}),
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
-  {const s=S.nvidia_production;card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,big:true}),
-     ()=>downloadCSV('nvidia_production.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k])])),null,'full');}
+  if(S.cowos_supply){const s=S.cowos_supply;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'CoWoS wafers / quarter',big:true}),
+     ()=>downloadCSV('cowos_supply.csv',['quarter','wafers'],s.bars.map(b=>[b.x,b.value])),null,'full');}
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}
@@ -354,7 +347,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
    const total=['Ampere','Hopper','Blackwell'].reduce((a,k)=>a+(lastT[k]||0),0);const lastDate=lastT.date;
    const cpcB=1.0,cpcR=1.8; // Rubin consumes ~1.8x the CoWoS area per chip vs Blackwell
    const rc=document.createElement('div');rc.className='chart-card full';
-   rc.innerHTML=`<h3>NVIDIA generation ramp — bounded by CoWoS supply</h3><div class="chart-blurb">Total output isn't fixed — it's set by NVIDIA's binding input, <b>CoWoS packaging</b>, which grows over time. Rubin uses ~1.8× the CoWoS area per chip, so as it ramps, chip <i>count</i> grows slower than compute does. Twizzle CoWoS growth and the Rubin ramp.</div>
+   rc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 style="margin:0">NVIDIA generation ramp — bounded by CoWoS supply</h3><div id="r2030" style="font-family:'Fraunces',serif;font-size:13.5px;color:var(--c-blue);font-weight:600"></div></div><div class="chart-blurb">Total output isn't fixed — it's set by NVIDIA's binding input, <b>CoWoS packaging</b>, which grows over time. Rubin uses ~1.8× the CoWoS area per chip, so as it ramps, chip <i>count</i> grows slower than compute does. Twizzle CoWoS growth and the Rubin ramp.</div>
      <div class="knobs" id="rknobs"></div><div class="legend" id="rlegend"></div><div class="chart-svg-holder" id="rchart"></div>
      <div class="chart-foot"><span>History: Epoch. Future: chips = CoWoS supply ÷ CoWoS-per-chip; Rubin ≈ 1.8× Blackwell packaging area.</span></div>`;
    g3.appendChild(rc);
@@ -365,7 +358,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
    rknobs.forEach(k=>{const d=document.createElement('label');d.className='knob';d.innerHTML=`${k.label}: <span class="kv" id="rkv_${k.id}"></span><input type="range" id="rkn_${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${k.val}">`;rkw.appendChild(d);d.querySelector('input').addEventListener('input',renderR);});
    function rkn(id){return +document.getElementById('rkn_'+id).value;}
    function renderR(){const cg=rkn('cowos'),start=rkn('start'),slope=rkn('slope');rknobs.forEach(k=>document.getElementById('rkv_'+k.id).textContent=k.fmt(rkn(k.id)));
-     const fdates=[];for(let y=2026;y<=2028;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
+     const fdates=[];for(let y=2026;y<=2030;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
      const kk=Math.log(81)/slope,qmid=start+slope/2;
      const frows=fdates.map((fd,i)=>{const dt=(i+1)/4;const sh=1/(1+Math.exp(-kk*(i-qmid)));
        const cpc=(1-sh)*cpcB+sh*cpcR;const cowos=total*cpcB*Math.pow(cg,dt);const tot=cowos/cpc;
@@ -374,6 +367,9 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      const HF={Ampere:0.3,Hopper:1,Blackwell:2.5,Rubin:5};
      const flow=rows.map(r=>({date:r.date,value:+Object.keys(HF).reduce((a,k)=>a+(r[k]||0)*HF[k],0).toFixed(2)}));
      let cum=0;const cumul=flow.map(d=>({date:d.date,value:+(cum+=d.value).toFixed(1)}));
+     const i30=fdates.indexOf('2030-12-31');
+     if(i30>=0){const r=frows[i30],tot30=r.Blackwell+r.Rubin,fl30=flow[hist.length+i30].value;
+       const e=rc.querySelector('#r2030');if(e)e.textContent=`2030 capacity: ~${tot30.toFixed(1)}M chips/q · ${fl30.toFixed(0)}M H100e/q`;}
      const rh=rc.querySelector('#rchart'),rl=rc.querySelector('#rlegend');rh.innerHTML='';rl.innerHTML='';
      stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true,line2:{axisLabel:'M H100e (log, right)',lines:[{name:'H100e / quarter',color:'#1d1c1a',vals:flow},{name:'Cumulative H100e (installed)',color:'#7a3b9a',vals:cumul}]}});}
    renderR();}

@@ -467,13 +467,11 @@ try:
     def roll12(a): return [{"date": a[i]["date"], "value": round(sum(a[i - 11 + k]["value"] for k in range(12)), 1)} for i in range(11, len(a))]
     if freq == "monthly":
         usgen = roll12(usgen); usdem = roll12(usdem) if usdem else []
-    mfac = 8.76; per = "year (12-mo trailing)" if freq == "monthly" else "year"
-    aih = [{"date": d["date"][:4] + "-12-15", "value": round(d["facility_gw"] * mfac, 2)} for d in fp["history"] if d["date"][5:7] == "12"]
-    aip = [{"date": str(d["year"]) + "-12-15", "value": round(d["value"] * mfac, 2)} for d in fp["projection"][sckey]]
-    series["us_energy"] = {"title": "US electricity: generation, demand & AI", "unit": f"TWh / {per}", "yfmt": "num", "ylabel": f"TWh per {per} (log)",
-        "blurb": f"US electricity generation & demand (EIA, 12-mo trailing). The red line is Epoch's <b>global</b> AI fleet power as a share of the US grid — a yardstick, NOT US-only consumption (only ~half of global AI compute sits in the US). AI power = chip TDP × 2.5 facility overhead × 8,760 h.",
-        "source": src + "; AI = Epoch fleet power × hours", "url": "https://www.eia.gov/electricity/",
-        "us_gen": usgen, "us_demand": usdem, "ai_hist": aih, "ai_proj": aip, "scenario": fp["projection"]["scenarios"][1]["name"], "freq": freq}
+    per = "year (12-mo trailing)" if freq == "monthly" else "year"
+    series["us_energy"] = {"title": "US electricity: generation & demand", "unit": f"TWh / {per}", "yfmt": "num", "ylabel": f"TWh per {per}",
+        "blurb": "US electricity was flat for ~15 years (2008–2021, ≈0%/yr), then broke out — +2.9%/yr in 2023–25 — as datacentre load arrived. The demand-forecast miss in one chart. EIA, 12-month trailing.",
+        "source": src, "url": "https://www.eia.gov/electricity/",
+        "us_gen": usgen, "us_demand": usdem, "freq": freq}
     live["us_energy"] = bool(EIA_KEY)
     cache("us_energy.csv", [{"date": d["date"], "us_twh": d["value"]} for d in usgen])
 except Exception as e:
@@ -488,6 +486,15 @@ try:
     sd, _ = epoch_zip("supply_denominators.csv", "components_supply_denominators.csv")
     sd = [r for r in sd if r.get("Logic supply (median)")]
     logic_sup_q = num(sd[-1]["Logic supply (median)"]); cowos_sup_q = num(sd[-1]["CoWoS supply (median)"])
+    # CoWoS supply graph (the binding bottleneck)
+    def _qof(ds): y, mo = ds[:4], int(ds[5:7]); return f"{y} Q{(mo - 1) // 3 + 1}"
+    cbars = [{"x": _qof(r["Start date"]), "value": round(num(r["CoWoS supply (median)"]))} for r in sd if num(r.get("CoWoS supply (median)"))]
+    if cbars:
+        series["cowos_supply"] = {"title": "CoWoS packaging supply — the binding bottleneck", "unit": "wafers / quarter", "yfmt": "num",
+            "blurb": "Global CoWoS advanced-packaging supply (TSMC ~90%+). Nearly all of it goes to AI accelerators — and it's the single tightest input gating AI-chip output. Roughly doubling per year, but demand wants far more.",
+            "source": "Epoch AI — AI Chip Components (CC-BY)", "url": "https://epoch.ai/data/ai-chip-production-index",
+            "bars": cbars}
+        live["cowos_supply"] = True
     # $/MW from Epoch Frontier Data Centers
     dpm = None
     try:
