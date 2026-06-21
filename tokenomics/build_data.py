@@ -156,8 +156,8 @@ tot_hist = [{"date": d, "value": round(sum(aggn[d].get(g, 0) for g in gens), 4)}
 lastT = tot_hist[-1]["value"]
 fq = ["2026-03-31", "2026-06-30", "2026-09-30", "2026-12-31", "2027-03-31", "2027-06-30", "2027-09-30", "2027-12-31"]
 def qproj(annual): return [{"date": fq[i], "value": round(lastT * (1 + annual) ** ((i + 1) / 4), 4)} for i in range(len(fq))]
-series["nvidia_total"] = {"title": "NVIDIA total chip production — outlook", "unit": "million chips / quarter", "yfmt": "num",
-    "blurb": "Total units are forecastable even without the generational split. Three assumptions for the unit-shipment growth rate.",
+series["nvidia_total"] = {"title": "NVIDIA total chip production", "unit": "million chips / quarter", "yfmt": "num",
+    "blurb": "Total units shipped per quarter (sum across generations) — the smooth total behind the generational split.",
     "source": "Epoch AI — AI Chip Sales (CC-BY); forecast = stated growth assumptions", "url": "https://epoch.ai/data/ai-chip-sales",
     "history": tot_hist, "proj": {"lo": qproj(0.0), "mid": qproj(0.15), "hi": qproj(0.30)},
     "scenarios": [{"key": "lo", "name": "Flat (~CoWoS-limited)", "color": "#9aa0a6", "note": "Unit count stays ~flat — bigger chips eat the extra packaging."},

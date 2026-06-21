@@ -154,9 +154,9 @@ function lineChart(ho,le,W,cfg){
   const focus=g.append('line').attr('y1',0).attr('y2',ih).attr('stroke','#bdb4a6').attr('opacity',0);
   const dots=cfg.lines.map(l=>g.append('circle').attr('r',4.5).attr('fill','#fff').attr('stroke',l.color).attr('stroke-width',2).attr('opacity',0).style('pointer-events','none'));
   g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
-   .on('mousemove',function(e){const mx=d3.pointer(e,this)[0],t0=x.invert(mx);focus.attr('x1',mx).attr('x2',mx).attr('opacity',1);let rows='',hd='';
+   .on('mousemove',function(e){const mx=d3.pointer(e,this)[0],t0=x.invert(mx);focus.attr('x1',mx).attr('x2',mx).attr('opacity',1);let rows='',hd='',bestdx=Infinity;
      cfg.lines.forEach((l,li)=>{const bis=d3.bisector(d=>d.t).left,i=bis(l.vals,t0),a=l.vals[i-1],b=l.vals[i];let d=!a?b:!b?a:(t0-a.t<b.t-t0?a:b);
-       if(d){dots[li].attr('cx',x(d.t)).attr('cy',y(d.y)).attr('opacity',1);rows+=`<div><i style="display:inline-block;width:8px;height:8px;background:${l.color};border-radius:2px;margin-right:5px"></i>${l.name}: <b>${fmt(d.y,cfg.yfmt)}</b></div>`;hd=d3.timeFormat('%b %Y')(d.t);}else dots[li].attr('opacity',0);});
+       if(d){dots[li].attr('cx',x(d.t)).attr('cy',y(d.y)).attr('opacity',1);rows+=`<div><i style="display:inline-block;width:8px;height:8px;background:${l.color};border-radius:2px;margin-right:5px"></i>${l.name}: <b>${fmt(d.y,cfg.yfmt)}</b></div>`;const dx=Math.abs(x(d.t)-mx);if(dx<bestdx){bestdx=dx;hd=d3.timeFormat('%b %Y')(d.t);}}else dots[li].attr('opacity',0);});
      tip(`<b>${hd}</b>${rows}`,e);}).on('mouseleave',()=>{untip();focus.attr('opacity',0);dots.forEach(c=>c.attr('opacity',0));});
 }
 function barChart(ho,le,W,cfg){
@@ -283,10 +283,9 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
   {const s=S.nvidia_production;card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter',bands:ERAS}),
      ()=>downloadCSV('nvidia_production.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k])])));}
-  {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));const last={t:h.at(-1).t,y:h.at(-1).y};
-   const scen=s.scenarios.map(sc=>({name:sc.name,color:sc.color,dashed:true,dots:false,cls:sc.key,vals:[last].concat(s.proj[sc.key].map(d=>({t:T(d.date),y:d.value})))}));
-   card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total (history)',color:'#1d1c1a',vals:h,cls:'h'}].concat(scen)}),
-     ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])),scenNote(s.scenarios,'Unit-growth assumptions:'));}
+  {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
+   card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
+     ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}
 
   // 4 — memory
   let g4=section('s4','04 · memory','HBM — the memory bottleneck','No one discloses a clean HBM revenue number, so we triangulate: Micron’s data-centre segment (best primary numeric proxy) and the boom at the market leader, SK Hynix.');
