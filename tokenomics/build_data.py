@@ -281,7 +281,7 @@ def month_shift(ym, months):
     while m <= 0: m += 12; y -= 1
     return f"{y}-{m:02d}"
 try:
-    cmbu = {}
+    cmbu = {}; cmar = {}
     for rd, f, acc, doc in sec_filings(723125, ("10-Q",), 5):
         t = sec_text(723125, acc, doc)
         m = re.search(r"CMBU\s+\$?\s*([\d,]+)\s+\d+\s*%\s+\$?\s*([\d,]+)\s+\d+\s*%\s+\$?\s*([\d,]+)\s+\d+\s*%", t)
@@ -290,9 +290,14 @@ try:
         cmbu.setdefault(cur, num(m.group(1)) / 1000)
         cmbu.setdefault(month_shift(cur, 3), num(m.group(2)) / 1000)
         cmbu.setdefault(month_shift(cur, 12), num(m.group(3)) / 1000)
-    pts = [{"date": d, "value": round(v, 3)} for d, v in sorted(cmbu.items())]
-    series["micron_cmbu"] = {"title": "Micron Cloud Memory revenue (HBM-driven)", "unit": "US$ billions / quarter", "yfmt": "usd",
-        "blurb": "The best primary numeric HBM proxy from filings — Micron's HBM/data-centre segment (Micron ~20% of the HBM market).",
+        oi = t.find("Operating Income (Loss) by Business Unit")
+        if oi < 0: oi = t.find("Operating Income by Business Unit")
+        mm = re.search(r"CMBU\s+\$?\s*[\d,()]+\s+(\d+)\s*%\s+\$?\s*[\d,()]+\s+(\d+)\s*%\s+\$?\s*[\d,()]+\s+(\d+)\s*%", t[oi:oi + 500]) if oi >= 0 else None
+        if mm:
+            cmar.setdefault(cur, num(mm.group(1))); cmar.setdefault(month_shift(cur, 3), num(mm.group(2))); cmar.setdefault(month_shift(cur, 12), num(mm.group(3)))
+    pts = [{"date": d, "value": round(cmbu[d], 3), "margin": cmar.get(d)} for d in sorted(cmbu)]
+    series["micron_cmbu"] = {"title": "Micron Cloud Memory: revenue & margin (HBM-driven)", "unit": "US$ billions / quarter", "yfmt": "usd",
+        "blurb": "The best primary numeric HBM proxy from filings — Micron's HBM/data-centre segment (Micron ~20% of the HBM market). Operating margin shows the pricing-power surge.",
         "source": "Micron 10-Q (CMBU segment), parsed from SEC EDGAR", "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000723125&type=10-Q",
         "points": pts}
     live["micron_cmbu"] = True
