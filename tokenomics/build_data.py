@@ -117,6 +117,26 @@ series["fleet_power"] = {"title": "AI fleet power draw", "unit": "GW", "yfmt": "
              {"label": "RAND 2030 (327 GW)", "value": 327, "year": 2030}, {"label": "All US generating capacity", "value": 1280}]}
 live["fleet_power"] = lS
 
+# ---- cumulative H100e by designer (where the compute comes from)
+srcagg = defaultdict(lambda: defaultdict(float))
+for r in sales:
+    d = r.get("End date"); des = (r.get("Chip manufacturer") or "Other").replace("Nvidia", "NVIDIA")
+    if d and d <= "2025-12-31": srcagg[d][des] += num(r.get("Compute estimate in H100e (median)")) or 0
+alldes = sorted({k for v in srcagg.values() for k in v}, key=lambda k: -srcagg[max(srcagg)][k] if k in srcagg[max(srcagg)] else 0)
+topdes = alldes[:5]
+src_rows = []
+for d in sorted(srcagg):
+    row = {"date": d}; oth = 0
+    for k, v in srcagg[d].items():
+        if k in topdes: row[k] = v / 1e6
+        else: oth += v / 1e6
+    row["Other"] = oth; src_rows.append(row)
+series["compute_by_source"] = {"title": "Cumulative AI compute by chip designer", "unit": "million H100e", "yfmt": "num",
+    "blurb": "Where the installed compute comes from — cumulative H100-equivalents by chip designer. NVIDIA dominates; custom silicon (Google, Amazon) and AMD are the challengers.",
+    "source": "Epoch AI — AI Chip Sales (CC-BY)", "url": "https://epoch.ai/data/ai-chip-sales",
+    "stack": topdes + ["Other"], "rows": src_rows}
+live["compute_by_source"] = lS
+
 chips, lC = epoch_zip("timelines_by_chip.csv", "timelines_by_chip.csv")
 GEN = {"A100": "Ampere", "A800": "Ampere", "H100/H200": "Hopper", "H20": "Hopper", "H800": "Hopper", "B200": "Blackwell", "B300": "Blackwell"}
 aggn = defaultdict(lambda: defaultdict(float))
@@ -130,6 +150,20 @@ series["nvidia_production"] = {"title": "NVIDIA AI-chip production by generation
     "source": "Epoch AI — AI Chip Sales (CC-BY)", "url": "https://epoch.ai/data/ai-chip-sales",
     "stack": gens, "rows": [{"date": d, **{g: round(aggn[d].get(g, 0), 4) for g in gens}} for d in sorted(aggn)]}
 live["nvidia_production"] = lC
+
+# ---- NVIDIA TOTAL production: history + scenario forecast (total is knowable w/o the gen split)
+tot_hist = [{"date": d, "value": round(sum(aggn[d].get(g, 0) for g in gens), 4)} for d in sorted(aggn)]
+lastT = tot_hist[-1]["value"]
+fq = ["2026-03-31", "2026-06-30", "2026-09-30", "2026-12-31", "2027-03-31", "2027-06-30", "2027-09-30", "2027-12-31"]
+def qproj(annual): return [{"date": fq[i], "value": round(lastT * (1 + annual) ** ((i + 1) / 4), 4)} for i in range(len(fq))]
+series["nvidia_total"] = {"title": "NVIDIA total chip production — outlook", "unit": "million chips / quarter", "yfmt": "num",
+    "blurb": "Total units are forecastable even without the generational split. Three assumptions for the unit-shipment growth rate.",
+    "source": "Epoch AI — AI Chip Sales (CC-BY); forecast = stated growth assumptions", "url": "https://epoch.ai/data/ai-chip-sales",
+    "history": tot_hist, "proj": {"lo": qproj(0.0), "mid": qproj(0.15), "hi": qproj(0.30)},
+    "scenarios": [{"key": "lo", "name": "Flat (~CoWoS-limited)", "color": "#9aa0a6", "note": "Unit count stays ~flat — bigger chips eat the extra packaging."},
+                  {"key": "mid", "name": "+15%/yr", "color": "#2b6c8f", "note": "Modest unit growth on top of mix shift to bigger chips."},
+                  {"key": "hi", "name": "+30%/yr", "color": "#b2453a", "note": "Aggressive: units and per-chip capability both climb fast."}]}
+live["nvidia_total"] = lC
 
 comp, lK = epoch_zip("quarterly_by_designer.csv", "components_quarterly_by_designer.csv")
 aggc = defaultdict(lambda: [0, 0, 0])
@@ -276,11 +310,12 @@ try:
             hpc.setdefault(yrs[k], (num(m.group(1 + 2 * k)) / 1e3 / 31, num(m.group(2 + 2 * k))))
     H = [{"year": y, "value": round(hpc[y][0], 2), "share": hpc[y][1]} for y in sorted(hpc)]
     fit = fit_exp([h["year"] for h in H if h["year"] >= 2022], [h["value"] for h in H if h["year"] >= 2022])
-    F = [{"year": y, "value": round(fit(y), 1)} for y in range(2026, 2031)]
+    y0 = min(h["year"] for h in H)
+    fitline = [{"year": y, "value": round(fit(y), 1)} for y in range(max(2022, y0), 2031)]
     series["tsmc_hpc"] = {"title": "TSMC HPC-platform revenue", "unit": "US$ billions", "yfmt": "usd",
-        "blurb": "TSMC's HPC (AI/datacentre) platform as a share of the world's leading foundry. Trend fit live on 2022+ history.",
+        "blurb": "TSMC's HPC (AI/datacentre) platform as a share of the world's leading foundry. The light line is a log-linear fit on 2022+ history, drawn back through the points and extrapolated to 2030.",
         "source": "TSMC 20-F (platform revenue), parsed from SEC EDGAR; NT$ at ~31/US$", "url": "https://investor.tsmc.com/english",
-        "history": H, "forecast": F}
+        "history": H, "forecast": [{"year": y, "value": round(fit(y), 1)} for y in range(2026, 2031)], "fitline": fitline}
     live["tsmc_hpc"] = True
 except Exception as e:
     print("  WARN tsmc_hpc:", e)

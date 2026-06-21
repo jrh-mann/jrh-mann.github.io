@@ -101,7 +101,9 @@ function tip(h,e){TT.innerHTML=h;TT.style.opacity=1;let x=e.clientX+14,y=e.clien
 function untip(){TT.style.opacity=0;}
 const PAL={'CoWoS packaging':'#b2453a','HBM memory':'#7a3b9a','Advanced logic wafers':'#2b6c8f',
  Ampere:'#a7a097',Hopper:'#2b6c8f',Blackwell:'#4e9a51',Rubin:'#7a3b9a',
- Wiwynn:'#b2453a',Quanta:'#d3873f',Wistron:'#2b6c8f','FP16/BF16':'#2b6c8f','FP8':'#4e9a51','FP4':'#b2453a'};
+ Wiwynn:'#b2453a',Quanta:'#d3873f',Wistron:'#2b6c8f','FP16/BF16':'#2b6c8f','FP8':'#4e9a51','FP4':'#b2453a',
+ NVIDIA:'#76b900',Google:'#4285f4',AMD:'#ed1c24',Amazon:'#ff9900',Huawei:'#8a6d3b',Cambricon:'#9467bd',Other:'#c9c2b6'};
+const ERAS=[['Hopper','2023-04-01','2024-10-01','#2b6c8f'],['Blackwell','2024-10-01','2026-07-01','#4e9a51'],['Rubin (expected)','2026-07-01','2027-12-01','#7a3b9a']];
 function plainNum(d){if(d===0)return'0';const a=Math.abs(d);return a<1?(+d.toFixed(2))+'':a<1000?(+d.toFixed(a<10?1:0))+'':(+(d/1000).toFixed(1))+'k';}
 function fmt(v,k){if(v==null||isNaN(v))return'–';if(k==='pct')return d3.format('.0f')(v)+'%';if(k==='usd')return '$'+plainNum(v)+'B';
  if(k==='si'){const a=Math.abs(v);return a>=1e9?d3.format('.1f')(v/1e9)+'B':a>=1e6?d3.format('.1f')(v/1e6)+'M':a>=1e3?d3.format('.0f')(v/1e3)+'k':d3.format('.0f')(v);}return plainNum(v);}
@@ -137,6 +139,9 @@ function lineChart(ho,le,W,cfg){
   g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6));
   const yax=d3.axisLeft(y).tickFormat(yAxisFmt(cfg.yfmt));tv?yax.tickValues(tv):yax.ticks(5);
   g.append('g').attr('class','axis').call(yax);ylab(g,m,ih,cfg.ylabel);
+  if(cfg.bands)cfg.bands.forEach(b=>{const x0=Math.max(0,x(T(b[1]))),x1=Math.min(iw,x(T(b[2])));if(x1<=x0)return;
+    g.append('rect').attr('x',x0).attr('y',0).attr('width',x1-x0).attr('height',ih).attr('fill',b[3]).attr('opacity',0.07);
+    g.append('text').attr('x',(x0+x1)/2).attr('y',12).attr('text-anchor','middle').attr('fill',b[3]).attr('font-size',9.5).attr('font-weight',600).attr('opacity',0.85).text(b[0]);});
   if(cfg.refs)cfg.refs.filter(r=>!r.year).forEach(r=>{g.append('line').attr('x1',0).attr('x2',iw).attr('y1',y(r.value)).attr('y2',y(r.value)).attr('stroke','#c9b89f').attr('stroke-dasharray','5 3').attr('stroke-width',1);
     g.append('text').attr('x',iw-2).attr('y',y(r.value)-4).attr('text-anchor','end').attr('fill','#a8895f').attr('font-size',9.5).text(r.label);});
   if(cfg.refs)cfg.refs.filter(r=>r.year).forEach(r=>{const px=x(new Date(r.year,11,31));g.append('circle').attr('cx',px).attr('cy',y(r.value)).attr('r',5).attr('fill','#7a3b9a').attr('stroke','#fff');
@@ -246,6 +251,8 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('compute_stock.csv',['date','median','lo','hi'],s.history.map(d=>[d.date,d.median,d.lo,d.hi])),scenNote(s.projection.scenarios,'Install scenarios (from end-2025):'));}
   {const s=S.fleet_power;card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',log:true,yloMul:0.07,ylabel:'GW, facility (log)',refs:s.refs,lines:projLines(s,'facility_gw','Facility power','#1d1c1a')}),
      ()=>downloadCSV('fleet_power.csv',['date','facility_gw','chip_gw'],s.history.map(d=>[d.date,d.facility_gw,d.chip_gw])),scenNote(s.projection.scenarios,s.projection.note));}
+  {const s=S.compute_by_source;card(g1,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million H100e (cumulative)'}),
+     ()=>downloadCSV('compute_by_source.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k]||0)])));}
 
   // 2 — chip
   let g2=section('s2','02 · the chip',"What's in a chip?",'Per-chip performance by numeric precision (log). Filled points are the frontier (record-setters); stars are announced roadmap parts.');
@@ -263,6 +270,10 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
   {const s=S.nvidia_production;card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter'}),
      ()=>downloadCSV('nvidia_production.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k])])));}
+  {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));const last={t:h.at(-1).t,y:h.at(-1).y};
+   const scen=s.scenarios.map(sc=>({name:sc.name,color:sc.color,dashed:true,dots:false,cls:sc.key,vals:[last].concat(s.proj[sc.key].map(d=>({t:T(d.date),y:d.value})))}));
+   card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',lines:[{name:'Total (history)',color:'#1d1c1a',vals:h,cls:'h'}].concat(scen)}),
+     ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])),scenNote(s.scenarios,'Unit-growth assumptions:'));}
 
   // 4 — memory
   let g4=section('s4','04 · memory','HBM — the memory bottleneck','No one discloses a clean HBM revenue number, so we triangulate: Micron’s data-centre segment (best primary numeric proxy) and the boom at the market leader, SK Hynix.');
@@ -273,8 +284,11 @@ fetch('data.json').then(r=>r.json()).then(D=>{
 
   // 5 — foundry
   let g5=section('s5','05 · the foundry','TSMC: AI takes over the leading foundry','TSMC’s high-performance-computing platform (AI + datacentre) revenue. The trend line is a log-linear fit on 2022-onward history, extrapolated.');
-  {const s=S.tsmc_hpc;const h=s.history.map(d=>({t:new Date(d.year,11,31),y:d.value}));const f=[{t:h.at(-1).t,y:h.at(-1).y}].concat(s.forecast.map(d=>({t:new Date(d.year,11,31),y:d.value})));
-   card(g5,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',log:true,ylabel:'US$ billions (log)',lines:[{name:'HPC revenue',color:'#4e9a51',vals:h,cls:'a'},{name:'Trend → 2030',color:'#4e9a51',vals:f,cls:'b',dashed:true,dots:false}]}),
+  {const s=S.tsmc_hpc;const h=s.history.map(d=>({t:new Date(d.year,11,31),y:d.value}));
+   const fitl=(s.fitline||[]).map(d=>({t:new Date(d.year,11,31),y:d.value}));
+   card(g5,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',log:true,ylabel:'US$ billions (log)',lines:[
+      {name:'Log-linear fit',color:'#bcd6b2',vals:fitl,cls:'fit',dashed:true,dots:false,w:1.6},
+      {name:'HPC revenue (actual)',color:'#3f7a42',vals:h,cls:'a'}]}),
      ()=>downloadCSV('tsmc_hpc.csv',['year','usd_bn','share_pct'],s.history.map(d=>[d.year,d.value.toFixed(1),d.share])));}
 
   // 6 — leading edge
@@ -284,7 +298,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   if(S.tsmc_monthly){const s=S.tsmc_monthly;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',lines:[{name:'TSMC monthly revenue',color:'#2b6c8f',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a',dots:false}]}),
      ()=>downloadCSV('tsmc_monthly.csv',['month','ntd_bn'],s.points.map(d=>[d.date,d.value])));}
   {const s=S.odm_revenue;const lines=Object.entries(s.lines).map(([k,v])=>({name:k,color:PAL[k]||'#888',cls:k,vals:v.map(d=>({t:T(d.date),y:d.value})),dots:false}));
-   card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',lines}),
+   card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'NT$ billions / month',bands:ERAS,lines}),
      ()=>{const names=Object.keys(s.lines),base=s.lines[names[0]];downloadCSV('odm_revenue.csv',['month',...names],base.map((d,i)=>[d.date,...names.map(n=>s.lines[n][i]?.value)]));});}
 
   const n=document.createElement('div');n.className='note';
