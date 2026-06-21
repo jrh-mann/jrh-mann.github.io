@@ -22,6 +22,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .grid{display:flex;flex-wrap:wrap;gap:20px;align-items:stretch}
 .grid>.chart-card{flex:1 1 430px;min-width:0;margin-top:0;display:flex;flex-direction:column}
 .grid>.chart-card.big{flex:1 1 460px}
+.grid>.chart-card.full{flex:1 1 100%}
 h1,h2,h3{font-family:'Fraunces','Georgia',serif;font-weight:600;letter-spacing:-0.01em;line-height:1.12}
 header{padding:78px 0 26px}
 h1{font-size:clamp(34px,6vw,58px)}
@@ -37,7 +38,7 @@ h2{font-size:clamp(24px,3.6vw,34px);margin-bottom:10px}
 .chart-card h3{font-size:18px;margin-bottom:3px}
 .chart-blurb{color:var(--muted);font-size:13.5px;max-width:640px;margin-bottom:6px}
 .chart-svg-holder{width:100%}
-.scen{font-size:12px;color:#54504a;margin-top:10px;border-top:1px dashed var(--line);padding-top:9px}
+.scen{font-size:12px;color:#54504a;margin-top:auto;border-top:1px dashed var(--line);padding-top:9px}
 .scen .scen-h{color:var(--muted);margin-bottom:3px}
 .scen div{margin:1px 0}
 .chart-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:auto;padding-top:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
@@ -129,7 +130,7 @@ function scenNote(scs,head){return `<div class="scen">${head?`<div class="scen-h
 
 // ===== builders =====
 function lineChart(ho,le,W,cfg){
-  const m={t:12,r:18,b:26,l:60},h=cfg.big?Math.max(360,Math.min(470,W*0.74)):Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:12,r:18,b:26,l:60},h=cfg.big?Math.max(400,Math.min(540,W*0.86)):Math.max(280,Math.min(360,W*0.62)),{g,iw,ih}=svgBase(ho,W,h,m);
   const all=[].concat(...cfg.lines.map(l=>l.vals));
   const x=d3.scaleTime().domain(d3.extent(all,d=>d.t)).range([0,iw]);
   let ymax=d3.max(all,d=>d.y),ymin=Math.min(0,d3.min(all,d=>d.y));
@@ -160,7 +161,7 @@ function lineChart(ho,le,W,cfg){
      tip(`<b>${hd}</b>${rows}`,e);}).on('mouseleave',()=>{untip();focus.attr('opacity',0);dots.forEach(c=>c.attr('opacity',0));});
 }
 function barChart(ho,le,W,cfg){
-  const m={t:12,r:16,b:34,l:54},h=300,{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:12,r:16,b:34,l:54},h=cfg.big?Math.max(340,Math.min(440,W*0.46)):300,{g,iw,ih}=svgBase(ho,W,h,m);
   const x=d3.scaleBand().domain(cfg.bars.map(d=>d.x)).range([0,iw]).padding(.25);
   const y=d3.scaleLinear().domain([0,d3.max(cfg.bars,d=>d.value)*1.13]).range([ih,0]);
   gridY(g,y,iw);g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x)).selectAll('text').attr('transform','rotate(-35)').style('text-anchor','end');
@@ -170,7 +171,7 @@ function barChart(ho,le,W,cfg){
   g.selectAll('text.bl').data(cfg.bars).join('text').attr('class','bl').attr('x',d=>x(d.x)+x.bandwidth()/2).attr('y',d=>y(d.value)-5).attr('text-anchor','middle').attr('font-size',9.5).attr('fill','#54504a').text(d=>fmt(d.value,cfg.yfmt));
 }
 function stackChart(ho,le,W,cfg){
-  const m={t:12,r:16,b:28,l:54},h=320,{g,iw,ih}=svgBase(ho,W,h,m);
+  const m={t:12,r:16,b:28,l:54},h=cfg.big?Math.max(340,Math.min(440,W*0.42)):320,{g,iw,ih}=svgBase(ho,W,h,m);
   const data=cfg.rows.map(r=>({t:T(r.date),...r}));
   const x=d3.scaleTime().domain(d3.extent(data,d=>d.t)).range([0,iw]);
   const stk=d3.stack().keys(cfg.keys)(data);
@@ -189,7 +190,8 @@ function stackChart(ho,le,W,cfg){
      let rows='';cfg.keys.forEach(k=>{rows+=`<div><i style="display:inline-block;width:8px;height:8px;background:${PAL[k]};border-radius:2px;margin-right:5px"></i>${k}: <b>${fmt(d[k],cfg.yfmt)}</b></div>`;});
      tip(`<b>${d3.timeFormat('%b %Y')(d.t)}</b>${rows}`,e);}).on('mouseleave',()=>{untip();focus.attr('opacity',0);});
 }
-function fitLog(pts){const n=pts.length;if(n<2)return null;const xs=pts.map(p=>p.year),ys=pts.map(p=>Math.log10(p.y));const mx=d3.mean(xs),my=d3.mean(ys);let nu=0,de=0;for(let i=0;i<n;i++){nu+=(xs[i]-mx)*(ys[i]-my);de+=(xs[i]-mx)**2;}if(!de)return null;const b=nu/de,a=my-b*mx;return x=>Math.pow(10,a+b*x);}
+function fitLog(pts){const n=pts.length;if(n<2)return null;const xs=pts.map(p=>p.year),ys=pts.map(p=>Math.log10(p.y));const mx=d3.mean(xs),my=d3.mean(ys);let nu=0,de=0;for(let i=0;i<n;i++){nu+=(xs[i]-mx)*(ys[i]-my);de+=(xs[i]-mx)**2;}if(!de)return null;const b=nu/de,a=my-b*mx;return {fn:x=>Math.pow(10,a+b*x),b};}
+function logTicks(y){const d=y.domain(),lo=Math.floor(Math.log10(d[0])),hi=Math.ceil(Math.log10(d[1])),tv=[];for(let k=lo;k<=hi;k++)for(const ml of [1,2,5]){const v=ml*Math.pow(10,k);if(v>=d[0]*0.999&&v<=d[1]*1.001)tv.push(v);}return tv;}
 function scatterChart(ho,le,W,cfg){
   const m={t:12,r:16,b:28,l:58},h=cfg.big?Math.max(360,Math.min(440,W*0.66)):340,{g,iw,ih}=svgBase(ho,W,h,m);
   const all=[].concat(...cfg.groups.map(gr=>gr.pts.concat(gr.future||[])));
@@ -197,19 +199,25 @@ function scatterChart(ho,le,W,cfg){
   const x=d3.scaleLinear().domain([d3.min(all,d=>d.year)-0.3,xmax+0.4]).range([0,iw]);
   const y=d3.scaleLog().domain([d3.min(all,d=>d.y)*0.7,d3.max(all,d=>d.y)*1.5]).range([ih,0]);
   gridY(g,y,iw,decades(y));g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6).tickFormat(d3.format('d')));
-  g.append('g').attr('class','axis').call(d3.axisLeft(y).tickValues(decades(y)).tickFormat(d3.format('~g')));ylab(g,m,ih,cfg.ylabel);
-  let anyFut=false;
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).tickValues(logTicks(y)).tickFormat(d3.format('~g')));ylab(g,m,ih,cfg.ylabel);
+  let anyFut=false;const allpts=[];
   cfg.groups.forEach(gr=>{
-    g.selectAll('._s'+gr.cls).data(gr.pts).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',3.3).attr('fill',gr.color).attr('opacity',.38).attr('stroke','#fff').attr('stroke-width',.4)
-     .on('mousemove',(e,d)=>tip(`<b>${d.label||d.name}</b><br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit||''}`,e)).on('mouseleave',untip);
+    g.selectAll('._s'+gr.cls).data(gr.pts).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',3.3).attr('fill',gr.color).attr('opacity',.38).attr('stroke','#fff').attr('stroke-width',.4);
+    gr.pts.forEach(d=>allpts.push({px:x(d.year),py:y(d.y),label:d.label||d.name,g:gr.name,c:gr.color,v:d.y,tag:''}));
     const sorted=[...gr.pts].sort((a,b)=>a.year-b.year);let mx=-Infinity;const fr=[];sorted.forEach(p=>{if(p.y>mx*1.0001){mx=p.y;fr.push(p);}});
-    const f=fitLog(fr);if(f&&fr.length>1){const xx=[fr[0].year,xmax];g.append('path').datum(xx).attr('d',d3.line().x(d=>x(d)).y(d=>y(f(d)))).attr('fill','none').attr('stroke',gr.color).attr('stroke-width',1.6).attr('stroke-dasharray','6 4').attr('opacity',.8);}
-    g.selectAll('._f'+gr.cls).data(fr).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',5).attr('fill',gr.color).attr('stroke','#1d1c1a').attr('stroke-width',1)
-     .on('mousemove',(e,d)=>tip(`<b>${d.label||d.name}</b> · frontier<br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit||''}`,e)).on('mouseleave',untip);
+    const f=fitLog(fr);let slope=null;if(f&&fr.length>1){const xx=[fr[0].year,xmax];g.append('path').datum(xx).attr('d',d3.line().x(d=>x(d)).y(d=>y(f.fn(d)))).attr('fill','none').attr('stroke',gr.color).attr('stroke-width',1.6).attr('stroke-dasharray','6 4').attr('opacity',.85);slope=Math.round((Math.pow(10,f.b)-1)*100);}
+    g.selectAll('._f'+gr.cls).data(fr).join('circle').attr('cx',d=>x(d.year)).attr('cy',d=>y(d.y)).attr('r',5).attr('fill',gr.color).attr('stroke','#1d1c1a').attr('stroke-width',1);
+    fr.forEach(d=>allpts.push({px:x(d.year),py:y(d.y),label:d.label||d.name,g:gr.name,c:gr.color,v:d.y,tag:' · frontier'}));
     const fut=gr.future||[];if(fut.length)anyFut=true;
-    g.selectAll('._x'+gr.cls).data(fut).join('path').attr('d',d3.symbol(d3.symbolStar,150)()).attr('transform',d=>`translate(${x(d.year)},${y(d.y)})`).attr('fill',gr.color).attr('stroke','#1d1c1a').attr('stroke-width',.6)
-     .on('mousemove',(e,d)=>tip(`<b>${d.name}</b> · roadmap<br>${gr.name}: ${fmt(d.y,'num')} ${cfg.unit||''}`,e)).on('mouseleave',untip);
-    legendItem(le,gr.color,gr.name,'dot');});
+    g.selectAll('._x'+gr.cls).data(fut).join('path').attr('d',d3.symbol(d3.symbolStar,150)()).attr('transform',d=>`translate(${x(d.year)},${y(d.y)})`).attr('fill',gr.color).attr('stroke','#1d1c1a').attr('stroke-width',.6);
+    fut.forEach(d=>allpts.push({px:x(d.year),py:y(d.y),label:d.name,g:gr.name,c:gr.color,v:d.y,tag:' · roadmap'}));
+    legendItem(le,gr.color,gr.name+(slope!=null?` (+${slope}%/yr)`:''),'dot');});
+  // permissive hover: highlight nearest point anywhere in plot
+  const hi=g.append('circle').attr('r',7).attr('fill','none').attr('stroke','#1d1c1a').attr('stroke-width',1.5).attr('opacity',0);
+  g.append('rect').attr('width',iw).attr('height',ih).attr('fill','none').attr('pointer-events','all')
+    .on('mousemove',function(e){const[mx2,my2]=d3.pointer(e,this);let best=null,bd=1e9;allpts.forEach(p=>{const dd=(p.px-mx2)**2+(p.py-my2)**2;if(dd<bd){bd=dd;best=p;}});
+      if(best){hi.attr('cx',best.px).attr('cy',best.py).attr('stroke',best.c).attr('opacity',1);tip(`<b>${best.label}</b>${best.tag}<br>${best.g}: ${fmt(best.v,'num')} ${cfg.unit||''}`,e);}})
+    .on('mouseleave',()=>{untip();hi.attr('opacity',0);});
   legendItem(le,'#777','● filled = frontier · – – fit','dot');
   if(anyFut)legendItem(le,'#555','★ roadmap','dot');
 }
@@ -277,20 +285,20 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   // 3 — bottlenecks
   let g3=section('s3','03 · the squeeze','Why it is bottlenecked','AI already consumes almost all advanced packaging and memory; the lithography that makes the chips comes from a single company; and chip output marches one generation at a time.');
   {const s=S.component_share;const lines=Object.entries(s.lines).map(([k,v])=>({name:k,color:PAL[k],cls:k.replace(/\W/g,''),vals:v.map(d=>({t:T(d.date),y:d.value}))}));
-   card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'pct',ylabel:'% of global supply',refs:[{label:'100% of global supply',value:100}],lines}),
+   card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'pct',big:true,ylabel:'% of global supply',refs:[{label:'100% of global supply',value:100}],lines}),
      ()=>downloadCSV('ai_component_share.csv',['date','cowos','hbm','logic'],s.lines['CoWoS packaging'].map((d,i)=>[d.date,d.value,s.lines['HBM memory'][i].value,s.lines['Advanced logic wafers'][i].value])));}
   {const s=S.euv_units;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'systems / year',unit:'systems'}),
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
-  {const s=S.nvidia_production;card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter',bands:ERAS}),
-     ()=>downloadCSV('nvidia_production.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k])])));}
+  {const s=S.nvidia_production;card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,big:true}),
+     ()=>downloadCSV('nvidia_production.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k])])),null,'full');}
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}
 
   // 4 — memory
   let g4=section('s4','04 · memory','HBM — the memory bottleneck','No one discloses a clean HBM revenue number, so we triangulate: Micron’s data-centre segment (best primary numeric proxy) and the boom at the market leader, SK Hynix.');
-  {const s=S.micron_cmbu;card(g4,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.points.map(p=>({x:p.date,value:p.value})),color:'#7a3b9a',yfmt:'usd',ylabel:'US$ bn / quarter'}),
-     ()=>downloadCSV('micron_cmbu.csv',['quarter','usd_bn'],s.points.map(p=>[p.date,p.value])));}
+  {const s=S.micron_cmbu;card(g4,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.points.map(p=>({x:p.date,value:p.value})),color:'#7a3b9a',yfmt:'usd',ylabel:'US$ bn / quarter',big:true}),
+     ()=>downloadCSV('micron_cmbu.csv',['quarter','usd_bn'],s.points.map(p=>[p.date,p.value])),null,'full');}
   {const s=S.skhynix;card(g4,s,(ho,le,W)=>comboChart(ho,le,W,{bars:s.points.map(p=>({x:p.x,value:p.revenue})),line:s.points.map(p=>({x:p.x,value:p.margin})),barUnit:'US$ bn',ylabel:'US$ billions',barColor:'#d3873f',lineColor:'#1f4e6b'}),
      ()=>downloadCSV('skhynix.csv',['quarter','revenue_krw_trn','op_margin_pct'],s.points.map(p=>[p.x,p.revenue,p.margin])));}
 
@@ -305,7 +313,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
 
   // 6 — leading edge
   let g6=section('s6','06 · what to watch','The leading edge','Official chip data lags a quarter; these fire earlier. NVIDIA’s forward commitments lead by quarters; TSMC and the Taiwan AI-server makers report monthly (live).');
-  {const s=S.nvidia_commitments;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',ylabel:'US$ billions',bands:ERAS,lines:[{name:'Supply commitments',color:'#4e9a51',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a'}]}),
+  {const s=S.nvidia_commitments;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',big:true,ylabel:'US$ billions',bands:ERAS,lines:[{name:'Supply commitments',color:'#4e9a51',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a'}]}),
      ()=>downloadCSV('nvidia_commitments.csv',['date','usd_bn'],s.points.map(d=>[d.date,d.value])));}
   if(S.tsmc_monthly){const s=S.tsmc_monthly;card(g6,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'usd',ylabel:'US$ billions / month',bands:ERAS,lines:[{name:'TSMC monthly revenue',color:'#2b6c8f',vals:s.points.map(d=>({t:T(d.date),y:d.value})),cls:'a',dots:false}]}),
      ()=>downloadCSV('tsmc_monthly.csv',['month','usd_bn'],s.points.map(d=>[d.date,d.value])));}

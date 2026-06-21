@@ -248,7 +248,7 @@ except Exception as e:
             if r.get(nm): odm.setdefault(nm, []).append({"date": f"{r['year']}-{int(r['month']):02d}", "value": num(r[nm]) / 1e9})
     live["odm_revenue"] = False
 series["odm_revenue"] = {"title": "AI-server makers' monthly revenue (Taiwan)", "unit": "NT$ billions / month", "yfmt": "num",
-    "blurb": "The ODMs that assemble AI servers/racks. Each NVIDIA generation shows up here as a step-up — watch for the Rubin wave.",
+    "blurb": "ODMs (original design manufacturers) build the AI servers and racks for the cloud giants. Each NVIDIA generation shows up as a step-up in their revenue; the Rubin wave is the next to watch.",
     "source": "TWSE monthly revenue via FinMind", "url": "https://finmindtrade.com", "lines": odm}
 
 # ============================================================ LIVE: SEC filing text
