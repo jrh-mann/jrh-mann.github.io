@@ -265,13 +265,14 @@ function comboChart(ho,le,W,cfg){
   gridY(g,yL,iw);g.append('g').attr('class','axis').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x)).selectAll('text').attr('transform','rotate(-40)').style('text-anchor','end').attr('font-size',9);
   g.append('g').attr('class','axis').call(d3.axisLeft(yL).ticks(5));g.append('g').attr('class','axis').attr('transform',`translate(${iw},0)`).call(d3.axisRight(yR).ticks(5).tickFormat(d=>d+'%'));
   ylab(g,m,ih,cfg.ylabel);
+  const bn=cfg.barName||'Revenue',lnm=cfg.lineName||'Operating margin',lu=cfg.lineUnit||'%';
   g.selectAll('rect.b').data(cfg.bars).join('rect').attr('class','b').attr('x',d=>x(d.x)).attr('y',d=>yL(d.value)).attr('width',x.bandwidth()).attr('height',d=>ih-yL(d.value)).attr('fill',cfg.barColor||'#d3873f').attr('rx',2)
-   .on('mousemove',(e,d)=>tip(`<b>${d.x}</b><br>Revenue: ${fmt(d.value,'num')} ${cfg.barUnit}`,e)).on('mouseleave',untip);
+   .on('mousemove',(e,d)=>tip(`<b>${d.x}</b><br>${bn}: ${fmt(d.value,'num')} ${cfg.barUnit}`,e)).on('mouseleave',untip);
   const ln=d3.line().x(d=>x(d.x)+x.bandwidth()/2).y(d=>yR(d.value)).curve(d3.curveMonotoneX);
   g.append('path').datum(cfg.line).attr('d',ln).attr('fill','none').attr('stroke',cfg.lineColor||'#1f4e6b').attr('stroke-width',2.4);
   g.selectAll('circle.m').data(cfg.line).join('circle').attr('class','m').attr('cx',d=>x(d.x)+x.bandwidth()/2).attr('cy',d=>yR(d.value)).attr('r',3).attr('fill',cfg.lineColor||'#1f4e6b')
-   .on('mousemove',(e,d)=>tip(`<b>${d.x}</b><br>Operating margin: ${fmt(d.value,'num')}%`,e)).on('mouseleave',untip);
-  legendItem(le,cfg.barColor||'#d3873f','Revenue ('+(cfg.barUnit||'')+')');legendItem(le,cfg.lineColor||'#1f4e6b','Operating margin (%)');
+   .on('mousemove',(e,d)=>tip(`<b>${d.x}</b><br>${lnm}: ${fmt(d.value,'num')}${lu}`,e)).on('mouseleave',untip);
+  legendItem(le,cfg.barColor||'#d3873f',bn+(cfg.barUnit?' ('+cfg.barUnit+')':''));legendItem(le,cfg.lineColor||'#1f4e6b',lnm+' ('+lu+')');
 }
 
 // ===== load & render =====
@@ -308,7 +309,7 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   if(S.us_energy){const s=S.us_energy;
    const lines=[{name:'US total generation',color:'#1d1c1a',w:3.2,vals:s.us_gen.map(d=>({t:T(d.date),y:d.value}))}];
    if(s.us_demand&&s.us_demand.length)lines.push({name:'US demand',color:'#3a7ca5',w:2.4,vals:s.us_demand.map(d=>({t:T(d.date),y:d.value}))});
-   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',big:true,ylabel:'TWh per year',lines}),
+   card(g1,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',big:true,ylabel:'TWh per year',lines,refs:s.ai_ref?[{label:s.ai_ref.label,value:s.ai_ref.twh}]:undefined}),
      ()=>downloadCSV('us_energy.csv',['date','us_twh'],s.us_gen.map(d=>[d.date,d.value])),null,'big');}
   {const s=S.compute_by_source;const last=s.rows[s.rows.length-1].date;
    const yrn=ds=>{const d=new Date(ds);return d.getFullYear()+d.getMonth()/12;};
@@ -337,8 +338,10 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('ai_component_share.csv',['date','cowos','hbm','logic'],s.lines['CoWoS packaging'].map((d,i)=>[d.date,d.value,s.lines['HBM memory'][i].value,s.lines['Advanced logic wafers'][i].value])));}
   {const s=S.euv_units;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'systems / year',unit:'systems'}),
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
-  if(S.cowos_supply){const s=S.cowos_supply;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'CoWoS wafers / quarter',big:true}),
-     ()=>downloadCSV('cowos_supply.csv',['quarter','wafers'],s.bars.map(b=>[b.x,b.value])),null,'full');}
+  if(S.cowos_supply){const s=S.cowos_supply;const b=s.bars;
+   const yoy=b.map((d,i)=>i>=4?{x:d.x,value:+((d.value/b[i-4].value-1)*100).toFixed(0)}:null).filter(Boolean);
+   card(g3,s,(ho,le,W)=>comboChart(ho,le,W,{bars:b,line:yoy,barName:'Production',barUnit:'wafers',barColor:'#7a3b9a',lineName:'YoY growth',lineUnit:'%',lineColor:'#b2453a',ylabel:'CoWoS wafers / quarter',big:true}),
+     ()=>downloadCSV('cowos_production.csv',['quarter','wafers'],b.map(d=>[d.x,d.value])),null,'full');}
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}

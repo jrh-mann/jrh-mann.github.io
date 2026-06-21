@@ -490,8 +490,8 @@ try:
     def _qof(ds): y, mo = ds[:4], int(ds[5:7]); return f"{y} Q{(mo - 1) // 3 + 1}"
     cbars = [{"x": _qof(r["Start date"]), "value": round(num(r["CoWoS supply (median)"]))} for r in sd if num(r.get("CoWoS supply (median)"))]
     if cbars:
-        series["cowos_supply"] = {"title": "CoWoS packaging supply — the binding bottleneck", "unit": "wafers / quarter", "yfmt": "num",
-            "blurb": "Global CoWoS advanced-packaging supply (TSMC ~90%+). Nearly all of it goes to AI accelerators — and it's the single tightest input gating AI-chip output. Roughly doubling per year, but demand wants far more.",
+        series["cowos_supply"] = {"title": "CoWoS packaging production — the binding bottleneck", "unit": "wafers / quarter", "yfmt": "num",
+            "blurb": "Global CoWoS output (TSMC ~90%+). It's all immediately consumed by AI accelerators, so production — and its growth rate — is the real constraint. Roughly doubling per year, but the YoY rate is decelerating while demand wants far more.",
             "source": "Epoch AI — AI Chip Components (CC-BY)", "url": "https://epoch.ai/data/ai-chip-production-index",
             "bars": cbars}
         live["cowos_supply"] = True
@@ -506,6 +506,12 @@ try:
             mw = num(r.get("Current power (MW)")); cap = num(r.get("Current total capital cost (2025 USD billions)"))
             if mw and cap and mw > 0: ratios.append(cap * 1e3 / mw)
         ratios.sort(); dpm = round(ratios[len(ratios)//2], 1) if ratios else None
+        # actual US AI-datacentre power (Epoch frontier sites, US-located) — a real lower bound
+        us_mw = sum(num(r.get("Current power (MW)")) for r in dcr if r.get("Country") == "United States")
+        if us_mw and "us_energy" in series:
+            us_twh = round(us_mw / 1000 * 8.76)
+            series["us_energy"]["ai_ref"] = {"twh": us_twh, "gw": round(us_mw / 1000, 1),
+                "label": f"US AI datacentres ≈ {us_twh} TWh (Epoch frontier sites, lower bound)"}
     except Exception as e:
         print("  WARN data_centers $/MW:", e)
     series["buildout"] = {"title": "The buildout — what the compute trend requires", "yfmt": "num",
