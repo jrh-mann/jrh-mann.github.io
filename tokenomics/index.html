@@ -359,34 +359,38 @@ fetch('data.json').then(r=>r.json()).then(D=>{
   {const s=S.nvidia_total;const h=s.history.map(d=>({t:T(d.date),y:d.value}));
    card(g3,s,(ho,le,W)=>lineChart(ho,le,W,{yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,lines:[{name:'Total production',color:'#1d1c1a',vals:h,cls:'h'}]}),
      ()=>downloadCSV('nvidia_total.csv',['date','value'],s.history.map(d=>[d.date,d.value])));}
-  // NVIDIA ramp model — total bounded by CoWoS supply (the binding input), Rubin heavier per chip
+  // NVIDIA ramp model — output bounded by MIN(CoWoS, HBM, logic wafers)
   {const NP=S.nvidia_production;const hist=NP.rows;const lastT=hist[hist.length-1];
    const total=['Ampere','Hopper','Blackwell'].reduce((a,k)=>a+(lastT[k]||0),0);const lastDate=lastT.date;
-   const cpcB=1.0,cpcR=1.8; // Rubin consumes ~1.8x the CoWoS area per chip vs Blackwell
+   const R={cowos:1.8,hbm:1.5,logic:1.5};  // Rubin per-chip intensity vs Blackwell=1, per resource
+   const NM={cowos:'CoWoS',hbm:'HBM',logic:'logic wafers'};
    const rc=document.createElement('div');rc.className='chart-card full';
-   rc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 style="margin:0">NVIDIA generation ramp — bounded by CoWoS supply</h3><div id="r2030" style="font-family:'Fraunces',serif;font-size:13.5px;color:var(--c-blue);font-weight:600"></div></div><div class="chart-blurb">Total output isn't fixed — it's set by NVIDIA's binding input, <b>CoWoS packaging</b>, which grows over time. Rubin uses ~1.8× the CoWoS area per chip, so as it ramps, chip <i>count</i> grows slower than compute does. Twizzle CoWoS growth and the Rubin ramp.</div>
+   rc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 style="margin:0">NVIDIA generation ramp — bounded by min(CoWoS, HBM, logic)</h3><div id="r2030" style="font-family:'Fraunces',serif;font-size:13.5px;color:var(--c-blue);font-weight:600"></div></div><div class="chart-blurb">Output isn't set by one input — it's the <b>minimum</b> of CoWoS packaging, HBM memory, and leading-edge logic wafers. Each grows at its own rate and Rubin needs more of each per chip. <b>Logic usually binds first</b> — AI is already ~80% of N3, so it can't grow fast. Twizzle each supply's growth and the Rubin ramp. (Power is a further downstream cap, not shown.)</div>
      <div class="knobs" id="rknobs"></div><div class="legend" id="rlegend"></div><div class="chart-svg-holder" id="rchart"></div>
-     <div class="chart-foot"><span>History: Epoch. Future: chips = CoWoS supply ÷ CoWoS-per-chip; Rubin ≈ 1.8× Blackwell packaging area.</span></div>`;
+     <div class="chart-foot"><span>History: Epoch. Future: chips/q = min over {CoWoS, HBM, logic} of (supply ÷ per-chip intensity), each calibrated to today's output.</span></div>`;
    g3.appendChild(rc);
-   const rknobs=[{id:'cowos',label:'CoWoS supply growth',min:1.2,max:3.0,step:0.1,val:1.8,fmt:v=>v.toFixed(1)+'×/yr'},
+   const rknobs=[{id:'cowos',label:'CoWoS growth',min:1.1,max:3.0,step:0.05,val:1.85,fmt:v=>v.toFixed(2)+'×/yr'},
+     {id:'hbm',label:'HBM growth',min:1.1,max:3.0,step:0.05,val:1.8,fmt:v=>v.toFixed(2)+'×/yr'},
+     {id:'logic',label:'Logic-wafer growth',min:1.05,max:2.5,step:0.05,val:1.25,fmt:v=>v.toFixed(2)+'×/yr'},
      {id:'start',label:'Rubin ramp starts',min:0,max:8,step:1,val:2,fmt:v=>'Q+'+v},
      {id:'slope',label:'Ramp speed (q,10→90%)',min:2,max:12,step:1,val:5,fmt:v=>v+'q'}];
    const rkw=rc.querySelector('#rknobs');
    rknobs.forEach(k=>{const d=document.createElement('label');d.className='knob';d.innerHTML=`${k.label}: <span class="kv" id="rkv_${k.id}"></span><input type="range" id="rkn_${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${k.val}">`;rkw.appendChild(d);d.querySelector('input').addEventListener('input',renderR);});
    function rkn(id){return +document.getElementById('rkn_'+id).value;}
-   function renderR(){const cg=rkn('cowos'),start=rkn('start'),slope=rkn('slope');rknobs.forEach(k=>document.getElementById('rkv_'+k.id).textContent=k.fmt(rkn(k.id)));
+   function renderR(){const G={cowos:rkn('cowos'),hbm:rkn('hbm'),logic:rkn('logic')},start=rkn('start'),slope=rkn('slope');rknobs.forEach(k=>document.getElementById('rkv_'+k.id).textContent=k.fmt(rkn(k.id)));
      const fdates=[];for(let y=2026;y<=2030;y++)for(const mm of['03-31','06-30','09-30','12-31'])fdates.push(y+'-'+mm);
-     const kk=Math.log(81)/slope,qmid=start+slope/2;
+     const kk=Math.log(81)/slope,qmid=start+slope/2;const bindAt={};
      const frows=fdates.map((fd,i)=>{const dt=(i+1)/4;const sh=1/(1+Math.exp(-kk*(i-qmid)));
-       const cpc=(1-sh)*cpcB+sh*cpcR;const cowos=total*cpcB*Math.pow(cg,dt);const tot=cowos/cpc;
-       return{date:fd,Ampere:0,Hopper:0,Blackwell:tot*(1-sh),Rubin:tot*sh};});
+       let best=Infinity,bind='cowos';
+       for(const res of ['cowos','hbm','logic']){const cpc=(1-sh)+sh*R[res];const c=total*Math.pow(G[res],dt)/cpc;if(c<best){best=c;bind=res;}}
+       bindAt[fd]=bind;return{date:fd,Ampere:0,Hopper:0,Blackwell:best*(1-sh),Rubin:best*sh};});
      const rows=hist.map(r=>({...r,Rubin:0})).concat(frows);
      const HF={Ampere:0.3,Hopper:1,Blackwell:2.5,Rubin:5};
      const flow=rows.map(r=>({date:r.date,value:+Object.keys(HF).reduce((a,k)=>a+(r[k]||0)*HF[k],0).toFixed(2)}));
      let cum=0;const cumul=flow.map(d=>({date:d.date,value:+(cum+=d.value).toFixed(1)}));
      const i30=fdates.indexOf('2030-12-31');
      if(i30>=0){const r=frows[i30],tot30=r.Blackwell+r.Rubin,fl30=flow[hist.length+i30].value;
-       const e=rc.querySelector('#r2030');if(e)e.textContent=`2030 capacity: ~${tot30.toFixed(1)}M chips/q · ${fl30.toFixed(0)}M H100e/q`;}
+       const e=rc.querySelector('#r2030');if(e)e.textContent=`2030: ~${tot30.toFixed(1)}M chips/q · ${fl30.toFixed(0)}M H100e/q — bound by ${NM[bindAt['2030-12-31']]}`;}
      const rh=rc.querySelector('#rchart'),rl=rc.querySelector('#rlegend');rh.innerHTML='';rl.innerHTML='';
      stackChart(rh,rl,rh.clientWidth||820,{rows,keys:['Ampere','Hopper','Blackwell','Rubin'],yfmt:'num',ylabel:'million chips / quarter',splitDate:lastDate,big:true,line2:{axisLabel:'M H100e (log, right)',lines:[{name:'H100e / quarter',color:'#1d1c1a',vals:flow},{name:'Cumulative H100e (installed)',color:'#7a3b9a',vals:cumul}]}});}
    renderR();}
