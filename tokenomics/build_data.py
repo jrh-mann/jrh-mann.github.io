@@ -151,6 +151,19 @@ series["nvidia_production"] = {"title": "NVIDIA AI-chip production by generation
     "stack": gens, "rows": [{"date": d, **{g: round(aggn[d].get(g, 0), 4) for g in gens}} for d in sorted(aggn)]}
 live["nvidia_production"] = lC
 
+# within-generation split (B200 vs B300 etc.); China-export parts + incomplete quarter excluded
+CHIP_KEEP = ["A100", "H100/H200", "B200", "B300"]
+aggc = defaultdict(lambda: defaultdict(float))
+for r in chips:
+    if r.get("Chip manufacturer") != "Nvidia" or r.get("Incomplete") == "True": continue
+    name = (r.get("Name", "").split(" - ")[-1]).strip(); d = r.get("End date")
+    if name in CHIP_KEEP and d: aggc[d][name] += (num(r.get("Number of Units")) or 0) / 1e6
+series["nvidia_by_chip"] = {"title": "NVIDIA production within generation — B200 vs B300", "unit": "million chips / quarter", "yfmt": "num",
+    "blurb": "The same production split by specific chip model — the B200→B300 transition inside Blackwell. China-export parts (H20/H800) and the incomplete latest quarter are excluded; Epoch groups H100/H200 (compute-identical).",
+    "source": "Epoch AI — AI Chip Sales (CC-BY)", "url": "https://epoch.ai/data/ai-chip-sales",
+    "stack": CHIP_KEEP, "rows": [{"date": d, **{c: round(aggc[d].get(c, 0), 4) for c in CHIP_KEEP}} for d in sorted(aggc)]}
+live["nvidia_by_chip"] = lC
+
 # ---- NVIDIA TOTAL production: history + scenario forecast (total is knowable w/o the gen split)
 tot_hist = [{"date": d, "value": round(sum(aggn[d].get(g, 0) for g in gens), 4)} for d in sorted(aggn)]
 lastT = tot_hist[-1]["value"]

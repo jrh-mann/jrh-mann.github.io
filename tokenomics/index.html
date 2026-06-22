@@ -117,6 +117,7 @@ function tip(h,e){TT.innerHTML=h;TT.style.opacity=1;let x=e.clientX+14,y=e.clien
 function untip(){TT.style.opacity=0;}
 const PAL={'CoWoS packaging':'#b2453a','HBM memory':'#7a3b9a','Advanced logic wafers':'#2b6c8f',
  Ampere:'#a7a097',Hopper:'#2b6c8f',Blackwell:'#4e9a51',Rubin:'#7a3b9a',
+ A100:'#c9c2b6','H100/H200':'#2b6c8f',B200:'#6cba6f',B300:'#2e7d32',
  Wiwynn:'#b2453a',Quanta:'#d3873f',Wistron:'#2b6c8f','FP16/BF16':'#2b6c8f','FP8':'#4e9a51','FP4':'#b2453a',
  NVIDIA:'#76b900',Google:'#4285f4',AMD:'#ed1c24',Amazon:'#ff9900',Huawei:'#8a6d3b',Cambricon:'#9467bd',Other:'#c9c2b6'};
 const ERAS=[['Ampere','2021-06-01','2023-04-01','#a7a097'],['Hopper','2023-04-01','2024-10-01','#2b6c8f'],['Blackwell','2024-10-01','2026-07-01','#4e9a51'],['Rubin (expected)','2026-07-01','2027-12-01','#7a3b9a']];
@@ -343,6 +344,9 @@ fetch('data.json').then(r=>r.json()).then(D=>{
      ()=>downloadCSV('ai_component_share.csv',['date','cowos','hbm','logic'],s.lines['CoWoS packaging'].map((d,i)=>[d.date,d.value,s.lines['HBM memory'][i].value,s.lines['Advanced logic wafers'][i].value])));}
   {const s=S.euv_units;card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',ylabel:'systems / year',unit:'systems'}),
      ()=>downloadCSV('euv_units.csv',['year','units'],s.bars.map(d=>[d.x,d.value])));}
+  if(S.nvidia_by_chip){const s=S.nvidia_by_chip;
+   card(g3,s,(ho,le,W)=>stackChart(ho,le,W,{rows:s.rows,keys:s.stack,yfmt:'num',ylabel:'million chips / quarter',bands:ERAS,big:true}),
+     ()=>downloadCSV('nvidia_by_chip.csv',['date',...s.stack],s.rows.map(r=>[r.date,...s.stack.map(k=>r[k])])),null,'full');}
   if(S.cowos_supply){const s=S.cowos_supply;
    card(g3,s,(ho,le,W)=>barChart(ho,le,W,{bars:s.bars,color:'#7a3b9a',yfmt:'num',unit:'wafers',ylabel:'CoWoS wafers / quarter',big:true,fit:true,fitPerYear:4}),
      ()=>downloadCSV('cowos_production.csv',['quarter','wafers'],s.bars.map(d=>[d.x,d.value])),null,'full');}
