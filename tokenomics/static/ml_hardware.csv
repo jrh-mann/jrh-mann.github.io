@@ -4,7 +4,7 @@ NVIDIA reports CoreWeave availability and Cognition production workloads by this
 https://www.nvidia.com/en-us/data-center/vera-rubin-nvl72/
 https://dam-cdn.nvd.orangelogic.com/AssetLink/56p68o47y6f1yucpubl0ump1c0aif422.pdf
 https://www.nvidia.com/en-us/data-center/nvlink/",,,2026-10-21 00:02:33+00:00,3.5e+16,,,,1.75e+16,2.177
-Google TPU v8i,Google,TPU,,2026-08-02,17500.0,,1.01e+16,1.01e+16,288000000000.0,8601000000000.0,,,,,,,,,,,TSMC,,,,,,,,,"https://cloud.google.com/blog/products/compute/tpu-8t-and-tpu-8i-technical-deep-dive, https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/eighth-generation-tpu-agentic-era/ ",,,2026-09-30 18:56:16+00:00,1.01e+16,,8.08e+16,0.0,1.01e+16,
+Google TPU v8i,Google,TPU,,2026-08-02,17500.0,1101000000000000.0,1.01e+16,1.01e+16,288000000000.0,8601000000000.0,2400000000000.0,,,,,,,,,,TSMC,,,,,,,,,"https://cloud.google.com/blog/products/compute/tpu-8t-and-tpu-8i-technical-deep-dive, https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/eighth-generation-tpu-agentic-era/ ",,,2026-10-21 14:38:14+00:00,1.01e+16,,8.08e+16,62914285714.28571,1.01e+16,0.912
 AMD Instinct MI455X,AMD,GPU,"Inference Capacity Index update (2026-10-20): Saved score; see Scored inputs. Audited specs + stated modeling assumptions.
 
 Frozen Helios resource projection with FP4 experts; vendor-specific collective execution is uncalibrated. 72-GPU scale-up domain
@@ -16,7 +16,8 @@ Release/availability: 2026-07-23. Basis: Vendor-listed launch date. AMD lists La
 Other populated fields retained from the supplied Airtable export where a name match exists. Derived performance/efficiency fields are left blank for Airtable to recompute, rather than carrying stale calculated values.",2026-07-23,,5000000000000000.0,2.01e+16,4.03e+16,432000000000.0,23300000000000.0,3600000000000.0,,,,,,,,,,,,,,,,,,,"https://www.amd.com/en/products/accelerators/instinct/mi400/mi455x.html
 https://www.amd.com/content/dam/amd/en/documents/products/accelerators/instinct/amd-instinct-mi455x_brochure.pdf",,,2026-10-21 00:14:55+00:00,4.03e+16,,,,2.01e+16,2.893
 Meta MTIA 300,Meta,Other,Primarily used for ranking and recommendation (R&R) inference and training.,2026-03-11,,600000000000000.0,1200000000000000.0,,216000000000.0,6100000000000.0,,,800.0,,,,,,,,TSMC,,,,,,,,,https://ai.meta.com/blog/meta-mtia-scale-ai-chips-for-billions/,,,2026-05-27 18:59:10+00:00,1200000000000000.0,1500000000000.0,9600000000000000.0,,1200000000000000.0,
-Microsoft Maia 200,Microsoft,GPU,Source for release date and specs: https://blogs.microsoft.com/blog/2026/01/26/maia-200-the-ai-accelerator-built-for-inference/,2026-01-26,,1268000000000000.0,5072000000000000.0,1.0145e+16,216000000000.0,7000000000000.0,,,750.0,,,,,,,,TSMC,,,,,,,,140000.0,https://blogs.microsoft.com/blog/2026/01/26/maia-200-the-ai-accelerator-built-for-inference/,,,2026-10-16 20:38:56+00:00,1.0145e+16,13526666666666.666,4.058e+16,,5072000000000000.0,0.677
+Microsoft Maia 200,Microsoft,GPU,Source for release date and specs: https://blogs.microsoft.com/blog/2026/01/26/maia-200-the-ai-accelerator-built-for-inference/,2026-01-26,,,5072000000000000.0,1.0145e+16,216000000000.0,7100000000000.0,2000000000000.0,,750.0,,,,,,,,TSMC,,,,,,,,140000.0,"https://blogs.microsoft.com/blog/2026/01/26/maia-200-the-ai-accelerator-built-for-inference/
+https://arxiv.org/html/2608.24664v1",,,2026-10-21 14:40:32+00:00,1.0145e+16,13526666666666.666,4.058e+16,,5072000000000000.0,0.677
 Amazon Trainium3,Amazon AWS,GPU,"Source for TDP: https://newsletter.semianalysis.com/p/aws-trainium3-deep-dive-a-potential
 to do: fill in memory specs",2025-12-02,,671000000000000.0,2517000000000000.0,2517000000000000.0,,,,,700.0,,183000000000000.0,671000000000000.0,,,,,TSMC,,,,,,,,,https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/trainium3.html ,,,2026-03-18 15:34:46+00:00,2517000000000000.0,3595714285714.2856,2.0136e+16,,2517000000000000.0,
 Google TPU v7 Ironwood,Google,TPU,"source for release date: https://www.cnbc.com/2025/11/06/google-unveils-ironwood-seventh-generation-tpu-competing-with-nvidia.html
@@ -25,8 +26,8 @@ Google does not officially state TPUv7's TDP. In the blog post announcing TPUv7 
 TPUv2 does 46 TFLOP/s peak and has a TDP of 280 W. 
 
 TPUv7 does 4614 TFLOP/s peak (FP8). So the TPUv7's TDP is (4614 TFLOP/s / 46 TFLOP/s) * 280 W / 29.3x efficiency = ~959 W. Note that this may be a slightly approximate figure due to rounding on Google's part. We round to 960 W.
-",2025-11-06,12000.0,2307000000000000.0,4614000000000000.0,,192000000000.0,7370000000000.0,,,960.0,,,,,,,,,,,,,,,,,"https://blog.google/products/google-cloud/ironwood-tpu-age-of-inference/
-https://docs.cloud.google.com/tpu/docs/tpu7x",https://epoch.ai/data/ai-chip-sales-documentation/methodology#google,Gemini 3 Pro,2026-06-25 16:27:47+00:00,4614000000000000.0,4806250000000.0,3.6912e+16,192250000000.0,4614000000000000.0,
+",2025-11-06,12000.0,2307000000000000.0,4614000000000000.0,,192000000000.0,7370000000000.0,1200000000000.0,,960.0,,,,,,,,,,,,,,,,,"https://blog.google/products/google-cloud/ironwood-tpu-age-of-inference/
+https://docs.cloud.google.com/tpu/docs/tpu7x",https://epoch.ai/data/ai-chip-sales-documentation/methodology#google,Gemini 3 Pro,2026-10-21 14:42:52+00:00,4614000000000000.0,4806250000000.0,3.6912e+16,192250000000.0,4614000000000000.0,0.742
 Huawei Ascend 920,Huawei,NPU,,2025-10-01,,900000000000000.0,,,,4000000000000.0,,,,,,,,,,,SMIC,,,,,,,6.0,,https://www.tomshardware.com/pc-components/gpus/huawei-introduces-the-ascend-920-ai-chip-to-fill-the-void-left-by-nvidias-h20,,,2025-07-30 16:53:19+00:00,900000000000000.0,,,,900000000000000.0,
 NVIDIA GB300 (Blackwell Ultra),NVIDIA,GPU,"Individual GPUs are sometimes called Blackwell Ultra, but systems are referred to as GB300. GB300 is only available in systems containing two or more GPUs. Performance figures are per individual GPU, not per GB300 superchip. Performance figures are listed without sparsity.
 
@@ -41,7 +42,7 @@ https://resources.nvidia.com/en-us-blackwell-architecture/blackwell-ultra-datash
 https://dam-cdn.nvd.orangelogic.com/AssetLink/1k0p832eq8r5ca0u5383ie5o4tp3bst1.pdf
 https://docs.nvidia.com/dgx/dgxb300-user-guide/introduction-to-dgxb300.html",https://epoch.ai/data/ai-chip-sales-documentation/methodology#nvidia,"Arcee Trinity Large,Composer 2,Composer 2.5",2026-10-21 01:36:38+00:00,1.35e+16,12272727272727.273,,,4500000000000000.0,0.541
 AMD Instinct MI355X,AMD,GPU,release announcement (source for release date): https://www.tomshardware.com/pc-components/gpus/amd-announces-mi350x-and-mi355x-ai-gpus-claims-up-to-4x-generational-gain-up-to-35x-faster-inference-performance ,2025-06-12,30000.0,2516600000000000.0,5033200000000000.0,1.00663e+16,288000000000.0,8000000000000.0,1075200000000.0,,1400.0,,,,2340000000000000.0,,5033200000000000.0,1.00663e+16,TSMC,,,,,,,3.0,,"https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi355x-gpu-brochure.pdf
-https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi355x-platform-brochure.pdf",https://seekingalpha.com/news/4472735-amd-jumps-after-report-of-plans-to-raise-price-of-instinct-mi350-ai-chips,,2026-10-21 01:38:24+00:00,1.00663e+16,7190214285714.286,3.744e+16,167773333333.33334,5033200000000000.0,0.552
+https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-miI355x-platform-brochure.pdf",https://seekingalpha.com/news/4472735-amd-jumps-after-report-of-plans-to-raise-price-of-instinct-mi350-ai-chips,,2026-10-21 14:33:19+00:00,1.00663e+16,7190214285714.286,3.744e+16,167773333333.33334,5033200000000000.0,0.552
 AMD Instinct MI350X,AMD,GPU,release announcement (source for release date): https://www.tomshardware.com/pc-components/gpus/amd-announces-mi350x-and-mi355x-ai-gpus-claims-up-to-4x-generational-gain-up-to-35x-faster-inference-performance ,2025-06-12,25000.0,2309600000000000.0,4600000000000000.0,9200000000000000.0,288000000000.0,8000000000000.0,,,1000.0,,,,2340000000000000.0,,4614000000000000.0,9227500000000000.0,TSMC,,,,,,,3.0,,https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi350x-gpu-brochure.pdf ,https://seekingalpha.com/news/4472735-amd-jumps-after-report-of-plans-to-raise-price-of-instinct-mi350-ai-chips,,2026-06-25 16:29:09+00:00,9227500000000000.0,9227500000000.0,3.744e+16,184560000000.0,4614000000000000.0,
 NVIDIA RTX Pro 6000 Blackwell,NVIDIA,GPU,"Source for release date, clock speed, memory bus, transistors, etc: https://www.techpowerup.com/gpu-specs/rtx-pro-6000-blackwell.c4272
 
@@ -320,39 +321,23 @@ Huawei Ascend 800T A2,Huawei,GPU,,,,,,,,,,,310.0,,,,256000000000000.0,,512000000
 NVIDIA Rubin CPX,NVIDIA,GPU,,,,,,3e+16,128000000000.0,,,,,,,,,,,,,,,,,,,,,https://nvidianews.nvidia.com/news/nvidia-unveils-rubin-cpx-a-new-class-of-gpu-designed-for-massive-context-inference,,,2025-09-11 17:27:44+00:00,3e+16,,,,0.0,
 Huawei Ascend 950PR,Huawei,NPU,,,,,1000000000000000.0,2000000000000000.0,,1600000000000.0,,2000000000000.0,,,,,,,,,,,,,,,,,,"https://www.techradar.com/pro/huawei-ascend-950-vs-nvidia-h200-vs-amd-mi300-instinct-how-do-they-compare
 https://www.tomshardware.com/tech-industry/semiconductors/huawei-unveils-ascend-roadmap-backed-by-in-house-hbm",,,2026-10-01 21:40:36+00:00,2000000000000000.0,,,,1000000000000000.0,
-Huawei Ascend 950DT,Huawei,NPU,,,,,1000000000000000.0,2000000000000000.0,,4000000000000.0,,2000000000000.0,,,,,,,,,,,,,,,,,,"https://www.techradar.com/pro/huawei-ascend-950-vs-nvidia-h200-vs-amd-mi300-instinct-how-do-they-compare
-https://www.tomshardware.com/tech-industry/semiconductors/huawei-unveils-ascend-roadmap-backed-by-in-house-hbm",,,2025-10-14 14:13:33+00:00,2000000000000000.0,,,,1000000000000000.0,
+Huawei Ascend 950DT,Huawei,NPU,"Specs are from Huawei's Ascend 950 whitepaper (36-core / 144 GB upper bin), not verified against a shipping part.
+Release date: Q4 2026 per Huawei. Source: https://www.huawei.com/en/news/2025/9/hc-xu-keynote-speech",,,,973000000000000.0,1946000000000000.0,144000000000.0,4000000000000.0,2016000000000.0,2000000000000.0,,,,,,,,,,,,,,,,,,"https://www.techradar.com/pro/huawei-ascend-950-vs-nvidia-h200-vs-amd-mi300-instinct-how-do-they-compare
+https://www.tomshardware.com/tech-industry/semiconductors/huawei-unveils-ascend-roadmap-backed-by-in-house-hbm
+https://public-download.obs.cn-east-2.myhuaweicloud.com/ascend/%E6%98%87%E8%85%BE950%20NPU%E6%9E%B6%E6%9E%84%E7%99%BD%E7%9A%AE%E4%B9%A6.pdf",,,2026-10-21 14:45:20+00:00,1946000000000000.0,,,,973000000000000.0,0.357
 Huawei Ascend 970,Huawei,NPU,,,,,4000000000000000.0,8000000000000000.0,,14400000000000.0,,4000000000000.0,,,,,,,,,,,,,,,,,,"https://www.huawei.com/en/news/2025/9/hc-xu-keynote-speech
 https://www.huaweicentral.com/huawei-reveals-3-year-ascend-ai-chip-roadmap-950-coming-in-2026/",,,2025-10-14 14:16:22+00:00,8000000000000000.0,,,,4000000000000000.0,
 Huawei Ascend 960,Huawei,NPU,,,,,2000000000000000.0,4000000000000000.0,,9600000000000.0,,2200000000000.0,,,,,,,,,,,,,,,,,,"https://www.huawei.com/en/news/2025/9/hc-xu-keynote-speech
 https://www.huaweicentral.com/huawei-reveals-3-year-ascend-ai-chip-roadmap-950-coming-in-2026/",,,2025-10-14 14:16:16+00:00,4000000000000000.0,,,,2000000000000000.0,
 Cambricon Siyuan 690,Cambricon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2026-01-30 19:25:26+00:00,0.0,,,,0.0,
 NVIDIA VR300 (Rubin Ultra),NVIDIA,GPU,https://www.datacenterdynamics.com/en/news/nvidias-rubin-ultra-nvl576-rack-expected-to-be-600kw-coming-second-half-of-2027/,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2026-03-03 20:26:48+00:00,0.0,,,,0.0,
-Microsoft Maia 300,Microsoft,,"Inference Capacity Index update (2026-10-20): Saved score; see Scored inputs. Primary specs + assumed BF16 / network split.
-
-BF16 quarter-FP8 assumed; 800 GB/s direct-pair + 800 GB/s switched split inferred; SoC TDP. No collective startup in headline.
-
-Interconnect convention: Intranode bandwidth is the aggregate bidirectional equivalent (2 × the study's one-way outbound scale-up bandwidth), consistent with the existing NVIDIA Airtable entries. Fabric assumptions: Direct local group + switched rack.
-
-Release/availability: 2027. Basis: Planned deployment. Announced 2026-10-12; deployment expansion planned to begin in 2027. Exact first-deployment date unconfirmed.. Source: https://news.microsoft.com/source/emea/2026/10/microsoft-announces-maia-300-its-next-generation-custom-ai-chip/
-
-Other populated fields retained from the supplied Airtable export where a name match exists. Derived performance/efficiency fields are left blank for Airtable to recompute, rather than carrying stale calculated values.",,,1725000000000000.0,6900000000000000.0,1.38e+16,288000000000.0,18000000000000.0,1600000000000.0,,,,,,,,,,,,,,,,,,,https://azure.microsoft.com/en-us/blog/deep-dive-into-azure-maia-300-architecture/,,,2026-10-21 00:15:34+00:00,1.38e+16,,,,6900000000000000.0,1.593
-OpenAI Jalapeno,,,"Inference Capacity Index update (2026-10-20): Saved score; see Scored inputs. Primary slides + assumed BF16 / link direction.
-
-BF16 1.7 PF/s assumed as half FP8. Fabric 600 GB/s treated as one-way; directionality uncertain. Memory input is 216 GiB, not 216 decimal GB. Slides specify 128-chip local domain. MXFP4 family confirmed; numerical/storage equivalence to NVFP4 is a modeling proxy.
-
-Interconnect convention: Intranode bandwidth is the aggregate bidirectional equivalent (2 × the study's one-way outbound scale-up bandwidth), consistent with the existing NVIDIA Airtable entries. Fabric assumptions: Two-level half-flattened Clos; 128-chip local domain.
-
-Release/availability: By end 2026. Basis: Planned initial deployment. Vendor announcement targets initial deployment by end 2026; public benchmark results are not evidence of general availability.. Source: https://openai.com/index/openai-broadcom-jalapeno-inference-chip/
-
-Other populated fields retained from the supplied Airtable export where a name match exists. Derived performance/efficiency fields are left blank for Airtable to recompute, rather than carrying stale calculated values.",,,1700000000000000.0,3400000000000000.0,1.34e+16,231928233984.0,15400000000000.0,1200000000000.0,,,,,,,,,,,,,,,,,,,https://epochai.slack.com/files/U0BNH5P4EG5/F0BSNHGL6R4/openai_jalapeno_-_v2_final_-_hotchips__26.pdf,,,2026-10-21 01:31:02+00:00,1.34e+16,,,,3400000000000000.0,1.291
-Meta MTIA 400,Meta,,"Inference Capacity Index update (2026-10-20): Saved score; see Scored inputs. Primary + reproduced Hot Chips HBM update.
-
-9.4 TB/s Hot Chips update, vs 9.2 March roadmap. MX4 mapped to NVFP4 resource proxy; no equal-quality claim. Ideal 72-chip switched fabric at 1.2 TB/s one-way, zero startup; no MTIA kernel calibration or special-function/SRAM credit. Module TDP.
-
-Interconnect convention: Intranode bandwidth is the aggregate bidirectional equivalent (2 × the study's one-way outbound scale-up bandwidth), consistent with the existing NVIDIA Airtable entries. Fabric assumptions: 72-chip switched scale-up.
-
-Release/availability: Not confirmed. Basis: Deployment date unstated. 2026-03-11 announcement says lab testing completed and data-center deployment forthcoming. No precise MTIA 400 deployment date established in the reviewed primary source.. Source: https://ai.meta.com/blog/meta-mtia-scale-ai-chips-for-billions/
-
-Other populated fields retained from the supplied Airtable export where a name match exists. Derived performance/efficiency fields are left blank for Airtable to recompute, rather than carrying stale calculated values.",,,3000000000000000.0,6000000000000000.0,1.2e+16,288000000000.0,9400000000000.0,2400000000000.0,,,,,,,,,,,,,,,,,,,"https://ai.meta.com/blog/meta-mtia-scale-ai-chips-for-billions/
-https://www.servethehome.com/wp-content/uploads/2026/08/Meta-MITA-Hot-Chips-2026-MTIA-400-Performance-1920x1080.png",,,2026-10-21 01:32:54+00:00,1.2e+16,,,,6000000000000000.0,1.208
+Google TPU v8t,Google,TPU,,,,,5976900000000000.0,1.26e+16,216000000000.0,6528000000000.0,2400000000000.0,,,,,,,,,,,,,,,,,,,"https://cloud.google.com/blog/products/compute/tpu-8t-and-tpu-8i-technical-deep-dive
+https://docs.jax.dev/en/latest/pallas/tpu/hardware.html
+https://cloud.google.com/blog/ja/products/infrastructure/eighth-generation-tpu-agentic-era?hl=ja",,,2026-10-21 14:42:01+00:00,1.26e+16,,,,5976900000000000.0,0.72
+Microsoft Maia 300,Microsoft,,"Release date: planned deployment in 2027 (announced 2026-10-12); exact date unconfirmed. Source: https://news.microsoft.com/source/emea/2026/10/microsoft-announces-maia-300-its-next-generation-custom-ai-chip/
+800 GB/s direct-pair + 800 GB/s switched split is inferred.",,,,6900000000000000.0,1.38e+16,288000000000.0,18000000000000.0,1600000000000.0,,,,,,,,,,,,,,,,,,,https://azure.microsoft.com/en-us/blog/deep-dive-into-azure-maia-300-architecture/,,,2026-10-21 14:40:32+00:00,1.38e+16,,,,6900000000000000.0,1.593
+OpenAI Jalapeno,OpenAI,,"Release date: initial deployment targeted by end 2026; exact date unconfirmed. Source: https://openai.com/index/openai-broadcom-jalapeno-inference-chip/
+Fabric 600 GB/s treated as one-way; directionality uncertain. Memory is 216 GiB, not 216 decimal GB.",,,,3400000000000000.0,1.34e+16,231928233984.0,15400000000000.0,1200000000000.0,,,,,,,,,,,,,,,,,,,https://epochai.slack.com/files/U0BNH5P4EG5/F0BSNHGL6R4/openai_jalapeno_-_v2_final_-_hotchips__26.pdf,,,2026-10-21 14:40:32+00:00,1.34e+16,,,,3400000000000000.0,1.291
+Meta MTIA 400,Meta,,"Release date unconfirmed: Meta's 2026-03-11 post says lab testing is done and data-center deployment is forthcoming. Source: https://ai.meta.com/blog/meta-mtia-scale-ai-chips-for-billions/
+Memory bandwidth of 9.4 TB/s is from the Hot Chips update (9.2 TB/s in the March roadmap). MX4 is entered as FP4.",,,3000000000000000.0,6000000000000000.0,1.2e+16,288000000000.0,9400000000000.0,2400000000000.0,,,,,,,,,,,,,,,,,,,"https://ai.meta.com/blog/meta-mtia-scale-ai-chips-for-billions/
+https://www.servethehome.com/wp-content/uploads/2026/08/Meta-MITA-Hot-Chips-2026-MTIA-400-Performance-1920x1080.png",,,2026-10-21 14:43:52+00:00,1.2e+16,,,,6000000000000000.0,1.208
