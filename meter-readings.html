@@ -79,11 +79,15 @@ const meterData = [
     { date: '2026-05-18', electricity: 50559.7, gas: 37873.9},
     { date: '2026-06-19', electricity: 50906.9, gas: 37900.4},
     { date: '2026-07-25', electricity: 51310, gas: 37929},
+    { date: '2026-08-29', electricity: 51627, gas: 37936},
+    { date: '2026-10-01', electricity: 51965, gas: 37948},
+    { date: '2026-10-03', electricity: null, gas: 37949},
+    { date: '2026-10-05', electricity: 52007, gas: null},
     { date: '2026-11-01', electricity: 52164, gas: 38011}
 ];
 
 // Calculate baselines (first readings)
-const electricityBaseline = meterData[0].electricity;
+const electricityBaseline = meterData.find(d => d.electricity !== null).electricity;
 const gasBaseline = meterData.find(d => d.gas !== null)?.gas || 0;
 
 // Calculate usage from baselines (cumulative)
@@ -91,36 +95,42 @@ const usageData = meterData.map(d => ({
     date: d.date,
     rawElectricity: d.electricity,
     rawGas: d.gas,
-    electricityUsage: d.electricity - electricityBaseline,
+    electricityUsage: d.electricity !== null ? d.electricity - electricityBaseline : null,
     gasUsage: d.gas !== null ? d.gas - gasBaseline : null
 }));
 
 // Calculate period-based usage (gradient between readings)
 const periodUsageData = [];
-for (let i = 1; i < meterData.length; i++) {
-    const prev = meterData[i - 1];
-    const curr = meterData[i];
-    
-    // Calculate days between readings
-    const prevDate = new Date(prev.date);
-    const currDate = new Date(curr.date);
-    const daysBetween = Math.max(1, (currDate - prevDate) / (1000 * 60 * 60 * 24));
-    
-    // Calculate usage between readings
-    const elecUsage = curr.electricity - prev.electricity;
-    const gasUsage = (prev.gas !== null && curr.gas !== null) ? curr.gas - prev.gas : null;
-    
-    // Calculate daily rate for this period
-    const elecDailyRate = elecUsage / daysBetween;
-    const gasDailyRate = gasUsage !== null ? gasUsage / daysBetween : null;
-    
+// Each fuel's period runs from that fuel's previous non-null reading
+const daysApart = (a, b) => Math.max(1, (new Date(b) - new Date(a)) / (1000 * 60 * 60 * 24));
+let lastElec = null, lastGas = null;
+for (const curr of meterData) {
+    let elecUsage = null, elecDailyRate = null, elecDays = null, gasUsage = null, gasDailyRate = null, gasDays = null;
+    if (curr.electricity !== null) {
+        if (lastElec) {
+            elecUsage = curr.electricity - lastElec.electricity;
+            elecDays = daysApart(lastElec.date, curr.date);
+            elecDailyRate = elecUsage / elecDays;
+        }
+        lastElec = curr;
+    }
+    if (curr.gas !== null) {
+        if (lastGas) {
+            gasUsage = curr.gas - lastGas.gas;
+            gasDays = daysApart(lastGas.date, curr.date);
+            gasDailyRate = gasUsage / gasDays;
+        }
+        lastGas = curr;
+    }
+    if (elecUsage === null && gasUsage === null) continue;
     periodUsageData.push({
         date: curr.date,
         electricityPeriodUsage: elecUsage,
         gasPeriodUsage: gasUsage,
         electricityDailyRate: elecDailyRate,
         gasDailyRate: gasDailyRate,
-        daysBetween: daysBetween
+        electricityDays: elecDays,
+        gasDays: gasDays
     });
 }
 
@@ -135,7 +145,7 @@ const chart = new Chart(ctx, {
         datasets: [
             {
                 label: 'Electricity Usage (kWh)',
-                data: usageData.map(d => ({
+                data: usageData.filter(d => d.electricityUsage !== null).map(d => ({
                     x: d.date,
                     y: d.electricityUsage
                 })),
@@ -193,10 +203,9 @@ const chart = new Chart(ctx, {
                                 // Find the corresponding period data
                                 const dataPoint = periodUsageData.find(d => d.date === context.label);
                                 if (dataPoint) {
-                                    const days = dataPoint.daysBetween.toFixed(1);
-                                    const dailyRate = context.datasetIndex === 0 ? 
-                                        dataPoint.electricityDailyRate.toFixed(2) : 
-                                        dataPoint.gasDailyRate?.toFixed(2);
+                                    const isElec = context.datasetIndex === 0;
+                                    const days = (isElec ? dataPoint.electricityDays : dataPoint.gasDays)?.toFixed(1);
+                                    const dailyRate = (isElec ? dataPoint.electricityDailyRate : dataPoint.gasDailyRate)?.toFixed(2);
                                     label += ` (${days} days, ${dailyRate}/day)`;
                                 }
                             }
@@ -261,7 +270,7 @@ document.getElementById('toggleViewBtn').addEventListener('click', function() {
         viewMode = 'usage';
         this.textContent = 'Switch to Cumulative View';
         
-        chart.data.datasets[0].data = periodUsageData.map(d => ({
+        chart.data.datasets[0].data = periodUsageData.filter(d => d.electricityDailyRate !== null).map(d => ({
             x: d.date,
             y: d.electricityDailyRate
         }));
@@ -280,7 +289,7 @@ document.getElementById('toggleViewBtn').addEventListener('click', function() {
         viewMode = 'cumulative';
         this.textContent = 'Switch to Usage per Period';
         
-        chart.data.datasets[0].data = usageData.map(d => ({
+        chart.data.datasets[0].data = usageData.filter(d => d.electricityUsage !== null).map(d => ({
             x: d.date,
             y: d.electricityUsage
         }));
@@ -305,9 +314,9 @@ function populateTable() {
     tableBody.innerHTML = usageData.map(reading => `
         <tr>
             <td>${new Date(reading.date).toLocaleDateString('en-GB')}</td>
-            <td>${reading.electricityUsage.toLocaleString()}</td>
+            <td>${reading.electricityUsage !== null ? reading.electricityUsage.toLocaleString() : 'No data'}</td>
             <td>${reading.gasUsage !== null ? reading.gasUsage.toLocaleString() : 'No data'}</td>
-            <td>${reading.rawElectricity.toLocaleString()}</td>
+            <td>${reading.rawElectricity !== null ? reading.rawElectricity.toLocaleString() : 'No data'}</td>
             <td>${reading.rawGas !== null ? reading.rawGas.toLocaleString() : 'No data'}</td>
         </tr>
     `).join('');
@@ -404,7 +413,7 @@ function interpolateReading(series, date) {
 }
 
 // Build cumulative series for interpolation (raw totals, not usage)
-const elecSeries = meterData.map(r => ({ date: r.date, value: r.electricity }));
+const elecSeries = meterData.filter(r => r.electricity !== null).map(r => ({ date: r.date, value: r.electricity }));
 const gasSeries = meterData.filter(r => r.gas !== null).map(r => ({ date: r.date, value: r.gas }));
 
 function fmt(n, digits = 1) {
